@@ -1,65 +1,78 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, ViewTransition, startTransition, addTransitionType } from "react";
+
+export default function Index() {
+  const editableRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    const el = editableRef.current;
+    if (!el) {
+      return;
+    }
+    el.focus();
+    const selection = window.getSelection();
+    if (!selection) {
+      return;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }, []);
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        startTransition(() => {
+          addTransitionType('slide');
+          router.push('/home');
+        });
+
+        console.log("Enter pressed");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+ 
+      <main className="bg-background flex items-center justify-center min-h-dvh flex-col p-2">
+        <div className="rounded-xl overflow-hidden min-w-sm">
+          <header className="h-12 bg-default flex items-center justify-start gap-1 border-b border-segment px-3 caret-accent">
+            <span className="rounded-full bg-danger p-1.5 cursor-pointer" />
+            <span className="rounded-full bg-warning p-1.5 cursor-pointer" />
+            <span className="rounded-full bg-surface p-1.5 cursor-pointer" />
+          </header>
+          <aside className="p-4 px-3 bg-surface flex text-sm items-center">
+            <span className="mr-1 text-field-placeholder">user@portfolio:$</span>
+            <div className="flex ">
+              <span
+                ref={editableRef}
+                contentEditable={false}
+                suppressContentEditableWarning={true}
+                className="focus:outline-none text-accent"
+                autoFocus
+                spellCheck={false}
+              >
+                whoami
+              </span>
+              <div className="cursor-blink relative rounded-2xl"></div>
+            </div>
+          </aside>
+
+
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <h5 className="animate-pulse text-center text-3xl text-segment font-bold translate-y-full">Press Enter</h5>
       </main>
-    </div>
   );
 }

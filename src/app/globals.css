@@ -1,26 +1,146 @@
 @import "tailwindcss";
+@import "@heroui/styles";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+
+:root,
+.light,
+[data-theme="light"] {
+  /* Theme Colors (Light Mode) */
+  --accent: oklch(57.57% 0.1379 57.15);
+  --accent-foreground: oklch(99.11% 0 0);
+  --background: oklch(97.02% 0.0011 57.15);
+  --border: oklch(90.00% 0.0011 57.15);
+  --danger: oklch(65.32% 0.2333 2.14);
+  --danger-foreground: oklch(99.11% 0 0);
+  --default: oklch(94.00% 0.0011 57.15);
+  --default-foreground: oklch(21.03% 0.0059 57.15);
+  --field-background: oklch(100.00% 0.0006 57.15);
+  --field-foreground: oklch(21.03% 0.0011 57.15);
+  --field-placeholder: oklch(55.17% 0.0022 57.15);
+  --focus: oklch(57.57% 0.1379 57.15);
+  --foreground: oklch(21.03% 0.0011 57.15);
+  --muted: oklch(55.17% 0.0022 57.15);
+  --overlay: oklch(100.00% 0.0003 57.15);
+  --overlay-foreground: oklch(21.03% 0.0011 57.15);
+  --scrollbar: oklch(87.10% 0.0011 57.15);
+  --segment: oklch(100.00% 0.0011 57.15);
+  --segment-foreground: oklch(21.03% 0.0011 57.15);
+  --separator: oklch(92.00% 0.0011 57.15);
+  --success: oklch(73.29% 0.1939 127.21);
+  --success-foreground: oklch(21.03% 0.0059 127.21);
+  --surface: oklch(100.00% 0.0006 57.15);
+  --surface-foreground: oklch(21.03% 0.0011 57.15);
+  --surface-secondary: oklch(95.24% 0.0009 57.15);
+  --surface-secondary-foreground: oklch(21.03% 0.0011 57.15);
+  --surface-tertiary: oklch(93.73% 0.0009 57.15);
+  --surface-tertiary-foreground: oklch(21.03% 0.0011 57.15);
+  --warning: oklch(78.19% 0.1588 48.73);
+  --warning-foreground: oklch(21.03% 0.0059 48.73);
+  --command: oklch(56.106% 0.12114 245.967);
+  /* Border Radius */
+  --radius: 0.5rem;
+  --field-radius: 0.75rem;
+  /* Font Family */
+  /* Make sure to load Space Mono font in your app */
+  --font-sans: var(--font-sans-mono);
+  --font-plex: var(--font-plex-mono);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark,
+.default,
+[data-theme="dark"],
+[data-theme="default"] {
+  color-scheme: dark;
+  /* Theme Colors (Dark Mode) */
+  --accent: oklch(57.57% 0.1379 57.15);
+  --accent-foreground: oklch(99.11% 0 0);
+  --background: oklch(12.00% 0.0011 57.15);
+  --border: oklch(28.00% 0.0011 57.15);
+  --danger: oklch(59.40% 0.1971 1.03);
+  --danger-foreground: oklch(99.11% 0 0);
+  --default: oklch(27.40% 0.0011 57.15);
+  --default-foreground: oklch(99.11% 0 0);
+  --field-background: oklch(21.03% 0.0022 57.15);
+  --field-foreground: oklch(99.11% 0.0011 57.15);
+  --field-placeholder: oklch(70.50% 0.0022 57.15);
+  --focus: #b46004;
+  --foreground: oklch(99.11% 0.0011 57.15);
+  --muted: oklch(70.50% 0.0022 57.15);
+  --overlay: oklch(21.03% 0.0022 57.15);
+  --overlay-foreground: oklch(99.11% 0.0011 57.15);
+  --scrollbar: oklch(70.50% 0.0011 57.15);
+  --segment: oklch(39.64% 0.0011 57.15);
+  --segment-foreground: oklch(99.11% 0.0011 57.15);
+  --separator: oklch(25.00% 0.0011 57.15);
+  --success: oklch(73.29% 0.1939 127.21);
+  --success-foreground: oklch(21.03% 0.0059 127.21);
+  --surface: oklch(21.03% 0.0022 57.15);
+  --surface-foreground: oklch(99.11% 0.0011 57.15);
+  --surface-secondary: oklch(25.70% 0.0016 57.15);
+  --surface-secondary-foreground: oklch(99.11% 0.0011 57.15);
+  --surface-tertiary: oklch(27.21% 0.0016 57.15);
+  --surface-tertiary-foreground: oklch(99.11% 0.0011 57.15);
+  --warning: oklch(82.03% 0.1391 52.74);
+  --warning-foreground: oklch(21.03% 0.0059 52.74);
+  --command: oklch(56.106% 0.12114 245.967);
+}
+@theme {
+  --color-command: var(--command);
+  --font-sans: var(--font-sans);
+  --font-plex: var(--font-plex);
+}
+.cursor-blink {
+  position: relative;
+  display: inline-block;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.cursor-blink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  animation: cursor-expand 1.2s ease-in-out infinite;
+  height: calc(var(--text-sm) + 6px);
+  width: 2px;
+  background-color: var(--accent);
+  transform-origin: center;
+  border-radius: 2px;
+}
+@keyframes cursor-expand {
+  0% {
+    transform: translateY(-50%) scaleY(0);
+  }
+  50% {
+    transform: translateY(-50%) scaleY(1);
+  }
+  100% {
+    transform: translateY(-50%) scaleY(0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+::view-transition-old(root),
+::view-transition-new(root) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
 }
+
+::view-transition-old(.slide) {
+  --slide-offset: 100%;
+  animation: slide 0.5s ease reverse;
+}
+
+::view-transition-new(.slide) {
+  --slide-offset: -100%;
+  animation: slide 0.5s ease;
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(var(--slide-offset));
+  }
+  to {
+    transform: translateX(0);
+  }
+} 
