@@ -58,7 +58,7 @@
   --border: oklch(28.00% 0.0011 57.15);
   --danger: oklch(59.40% 0.1971 1.03);
   --danger-foreground: oklch(99.11% 0 0);
-  --default: oklch(27.40% 0.0011 57.15);
+  --default: #282727;
   --default-foreground: oklch(99.11% 0 0);
   --field-background: oklch(21.03% 0.0022 57.15);
   --field-foreground: oklch(99.11% 0.0011 57.15);
@@ -144,3 +144,35 @@
     transform: translateX(0);
   }
 } 
+
+.projects-shell {
+  isolation: isolate;
+}
+
+.projects-grid {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at top left, color-mix(in oklch, var(--accent) 18%, transparent), transparent 55%),
+    radial-gradient(circle at 30% 70%, color-mix(in oklch, var(--command) 14%, transparent), transparent 60%),
+    repeating-linear-gradient(0deg, color-mix(in oklch, var(--segment) 18%, transparent) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(90deg, color-mix(in oklch, var(--segment) 18%, transparent) 0 1px, transparent 1px 26px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.contact-shell {
+  isolation: isolate;
+}
+
+.contact-grid {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at 15% 15%, color-mix(in oklch, var(--command) 24%, transparent), transparent 55%),
+    radial-gradient(circle at 85% 20%, color-mix(in oklch, var(--accent) 18%, transparent), transparent 60%),
+    repeating-linear-gradient(0deg, color-mix(in oklch, var(--segment) 16%, transparent) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, color-mix(in oklch, var(--segment) 16%, transparent) 0 1px, transparent 1px 28px);
+  opacity: 0.65;
+  pointer-events: none;
+  z-index: 0;
+}

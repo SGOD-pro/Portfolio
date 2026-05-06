@@ -66,7 +66,7 @@ export default function Index() {
               >
                 whoami
               </span>
-              <div className="cursor-blink relative rounded-2xl"></div>
+              <div className="cursor-blink relative rounded-2xl"/>
             </div>
           </aside>
 
