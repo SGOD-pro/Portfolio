@@ -1,7 +1,7 @@
+
 "use client"
 import dynamic from 'next/dynamic'
 import { Separator } from '@heroui/react'
-import { Suspense } from 'react'
 import LineBox from '@/components/LineBox'
 import Link from 'next/link'
 
@@ -9,12 +9,12 @@ import Link from 'next/link'
 // and WebGL context issues on page reload
 const CodeIcon3D = dynamic(() => import('@/components/3DCode'), { ssr: false })
 
+
+
 function RightSide() {
   return (
     <div className="relative grow h-full p-2">
       <div style={{ height: 250 }}>
-        <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted">Loading 3D...</div>}>
-
           <CodeIcon3D
             extrudeDepth={1.2}
             color="#b46004"
@@ -30,8 +30,6 @@ function RightSide() {
             background="transparent"
             height="100%"
           />
-
-        </Suspense>
       </div>
       <Separator className='mb-7' />
       <aside>

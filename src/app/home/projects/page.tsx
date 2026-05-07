@@ -1,4 +1,8 @@
+"use client";
+
+import CommandBox from '@/components/CommandBox'
 import { Separator } from '@heroui/react'
+import { ViewTransition } from 'react'
 
 const projects = [
   {
@@ -36,9 +40,7 @@ const statusAccent: Record<string, string> = {
 
 function Projects() {
   return (
-    <div className="projects-shell relative h-full overflow-hidden rounded-xl border border-segment bg-surface/80 shadow-[0_0_0_1px_var(--segment)]">
-      <div className="projects-grid absolute inset-0" />
-      <div className="relative flex h-full flex-col px-6 py-5">
+      <div className="relative flex h-full flex-col">
         <header className="flex flex-wrap items-center gap-3 text-xs text-muted">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-danger" />
@@ -54,26 +56,31 @@ function Projects() {
             ssh · 127.0.0.1
           </span>
         </header>
-
-        <div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
-          <div className="flex items-center gap-2 text-muted">
-            <span className="text-accent">@</span>
-            <span>Fetching deployed systems from GitHub...</span>
-            <span className="rounded-full bg-success/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-success">
-              connected
-            </span>
-          </div>
-        </div>
-
-        <Separator className="my-6" />
-
+        <ul className="my-4">
+          <li>
+            <div className="flex ">
+              <span className="mr-1 text-field-placeholder font-bold">souvik@portfolio:$</span>
+              <span
+                contentEditable={false}
+                suppressContentEditableWarning={true}
+                className="focus:outline-none text-command"
+                autoFocus
+                spellCheck={false}
+              >
+                whoami
+              </span>
+            </div>
+          </li>
+          <li className="text-field-placeholder text-sm">
+            <p className="">Fetching deployed systems from GitHub...<span className="uppercase text-success">[connected]</span></p>
+          </li>
+        </ul>
         <div className="grid gap-5 lg:grid-cols-12">
           {projects.map((project, index) => (
             <article
               key={project.key}
-              className={`group relative rounded-xl border border-segment/70 bg-surface-secondary/60 p-5 shadow-[0_0_0_1px_var(--segment)] transition hover:border-foreground/60 hover:bg-surface-secondary/80 ${
-                index === 0 ? 'lg:col-span-7' : index === 1 ? 'lg:col-span-5' : 'lg:col-span-12'
-              }`}
+              className={`group relative rounded-xl border border-segment/70 bg-surface-secondary/60 p-5 shadow-[0_0_0_1px_var(--segment)] transition hover:border-foreground/60 hover:bg-surface-secondary/80 ${index === 0 ? 'lg:col-span-7' : index === 1 ? 'lg:col-span-5' : 'lg:col-span-12'
+                }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -85,7 +92,7 @@ function Projects() {
                     {project.name}
                   </h2>
                 </div>
-                <button className="rounded-md border border-segment/70 bg-overlay/60 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-segment transition group-hover:border-foreground/70 group-hover:text-foreground">
+                <button className="rounded-md border border-segment/70 bg-overlay/60 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-segment transition group-hover:border-foreground/70 group-hover:text-accent">
                   Details
                 </button>
               </div>
@@ -98,7 +105,7 @@ function Projects() {
                 {project.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-md border border-segment/60 bg-overlay/60 px-2 py-1 text-[10px] uppercase tracking-[0.25em] text-segment"
+                    className="rounded-md border border-segment/60 bg-overlay/60 px-2 py-1 text-[10px] uppercase tracking-[0.25em] text-accent/70"
                   >
                     {tag}
                   </span>
@@ -116,15 +123,8 @@ function Projects() {
             </article>
           ))}
         </div>
-
-        <Separator className="my-6" />
-
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
-          <span className="text-foreground">user@portfolio:~$</span>
-          <span className="cursor-blink text-muted">projects</span>
-        </div>
+        <CommandBox />
       </div>
-    </div>
   )
 }
 

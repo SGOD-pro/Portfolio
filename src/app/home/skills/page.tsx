@@ -1,23 +1,26 @@
+"use client"
+import CommandBox from '@/components/CommandBox'
 import { Separator } from '@heroui/react'
+import { ViewTransition } from 'react'
 
 const skills = [
 	{
 		title: 'Backend',
 		layer: 'layer_02',
 		accent: 'bg-accent',
-		tags: ['Node.js', 'Go', 'Python', 'PostgreSQL'],
+		tags: ['Node.js', 'Go', 'Python', 'PostgreSQL','Redis','MongoDB'],
 	},
 	{
 		title: 'Frontend',
 		layer: 'layer_01',
 		accent: 'bg-warning',
-		tags: ['Next.js', 'TypeScript', 'Tailwind CSS', 'Framer Motion'],
+		tags: ['Next.js', 'TS', 'Tailwind CSS', 'Framer Motion/GSAP'],
 	},
 	{
 		title: 'AI/ML',
 		layer: 'neural_net',
 		accent: 'bg-command',
-		tags: ['PyTorch', 'OpenAI API', 'Vector DBs', 'LangChain'],
+		tags: ['Scikit-learn', 'OpenAI API', 'Vector DBs', 'LangChain'],
 	},
 	{
 		title: 'DevOps',
@@ -35,9 +38,8 @@ const metrics = [
 
 function Skills() {
 	return (
-		<div className="projects-shell relative h-full overflow-hidden rounded-xl border border-segment bg-surface/80 shadow-[0_0_0_1px_var(--segment)]">
-			<div className="projects-grid absolute inset-0" />
-			<div className="relative flex h-full flex-col px-6 py-5">
+
+			<div className="relative flex h-full flex-col">
 				<header className="flex flex-wrap items-center gap-3 text-xs text-muted">
 					<div className="flex items-center gap-2">
 						<span className="h-2.5 w-2.5 rounded-full bg-danger" />
@@ -54,15 +56,15 @@ function Skills() {
 					</span>
 				</header>
 
-				<div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
-					<span className="text-foreground">user@portfolio:~$ skills</span>
-					<span className="text-muted">
+				<div className="my-4  items-center gap-4 text-sm">
+					<span className="text-field-placeholder">souvik@portfolio:~$ </span>
+					<span className="text-command">skills</span>
+
+					<div className="text-field-placeholder">
 						Analyzing core competencies...{' '}
 						<span className="text-accent">[INDEXING COMPLETE]</span>
-					</span>
+					</div>
 				</div>
-
-				<Separator className="my-6" />
 
 				<div className="grid gap-4 lg:grid-cols-12">
 					{skills.map((group) => (
@@ -71,7 +73,7 @@ function Skills() {
 							className="relative rounded-xl border border-segment/70 bg-surface-secondary/60 p-4 shadow-[0_0_0_1px_var(--segment)] lg:col-span-6"
 						>
 							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-segment">
+								<div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted">
 									<span className="text-accent">▣</span>
 									<span>{group.title}</span>
 								</div>
@@ -81,7 +83,7 @@ function Skills() {
 								{group.tags.map((tag) => (
 									<span
 										key={tag}
-										className="rounded-md border border-segment/60 bg-overlay/60 px-2 py-1 text-[10px] uppercase tracking-[0.25em] text-segment"
+										className="rounded-md border border-segment/60 bg-overlay/60 px-2 py-1 text-[10px] uppercase tracking-[0.25em] text-accent"
 									>
 										{tag}
 									</span>
@@ -115,7 +117,7 @@ function Skills() {
 						<div className="mt-4 space-y-4">
 							{metrics.map((metric) => (
 								<div key={metric.label}>
-									<div className="flex items-center justify-between text-[10px] uppercase tracking-[0.25em] text-segment">
+									<div className="flex items-center justify-between text-[10px] uppercase tracking-[0.25em] text-muted">
 										<span>{metric.label}</span>
 										<span className="text-muted">{metric.value}</span>
 									</div>
@@ -128,15 +130,10 @@ function Skills() {
 					</div>
 				</div>
 
-				<Separator className="my-6" />
-
-				<div className="flex flex-wrap items-center gap-3 text-xs text-muted">
-					<span className="text-foreground">&gt; Execute command...</span>
-					<span className="cursor-blink text-muted">_</span>
-				</div>
+				<Separator className="my-5" />
+				<CommandBox />
 			</div>
-		</div>
 	)
 }
 
-export default Skills
+export default Skills;
