@@ -445,7 +445,7 @@ function DefaultSidebar() {
               <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
                 GitHub
               </span>
-              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
+              <span className="truncate w-full text-command lowercase text-xs font-mono">
                 github.com/SGOD-pro
               </span>
             </Link>
@@ -461,7 +461,7 @@ function DefaultSidebar() {
               <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
                 LinkedIn
               </span>
-              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
+              <span className="truncate w-full text-command lowercase text-xs font-mono">
                 linkedin.com/in/souvik-karmakar
               </span>
             </Link>
@@ -475,7 +475,7 @@ function DefaultSidebar() {
               <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
                 Email
               </span>
-              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
+              <span className="truncate w-full text-command lowercase text-xs font-mono">
                 souvik.dev07@gmail.com
               </span>
             </Link>
@@ -493,9 +493,9 @@ function DefaultSidebar() {
                 <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
                   Resume / CV
                 </span>
-                <span className="text-[10px] text-command group-hover:text-accent font-mono transition-colors">[PDF ↗]</span>
+                <span className="text-[10px] text-command font-mono">[PDF ↗]</span>
               </div>
-              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
+              <span className="truncate w-full text-command lowercase text-xs font-mono">
                 drive.google.com/.../resume.pdf
               </span>
             </a>

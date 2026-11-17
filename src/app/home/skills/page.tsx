@@ -95,7 +95,7 @@ function Skills() {
           <section
             key={group.title}
             data-reveal
-            className="rounded-xl border border-border bg-surface/80 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] flex flex-col justify-between transition-all duration-150 hover:border-command/40 hover:bg-surface min-w-0"
+            className="rounded-xl border border-border bg-surface/80 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] flex flex-col justify-between transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0"
           >
             <div>
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-border">

@@ -48,6 +48,11 @@ export default function TextReveal({
         return;
       }
 
+      // Cap total stagger so the full reveal settles within ~350ms regardless
+      // of heading length. For short headings the passed stagger is used as-is.
+      const maxTotalMs = 350;
+      const cappedStagger = Math.min(stagger, (maxTotalMs - duration * 1000) / Math.max(1, letters.length) / 1000);
+
       gsap.fromTo(
         letters,
         {
@@ -58,10 +63,10 @@ export default function TextReveal({
           opacity: 1,
           y: 0,
           duration,
-          stagger,
+          stagger: cappedStagger,
           delay,
           ease: "power2.out",
-          clearProps: "transform",
+          clearProps: "transform,will-change",
         }
       );
     },
@@ -86,7 +91,7 @@ export default function TextReveal({
             {Array.from(word).map((char, charIdx) => (
               <span
                 key={charIdx}
-                className="reveal-char inline-block will-change-transform will-change-opacity"
+                className="reveal-char inline-block"
               >
                 {char}
               </span>

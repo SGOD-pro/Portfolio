@@ -63,7 +63,7 @@ function Experience() {
           <section
             key={area.title}
             data-reveal
-            className="rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all duration-150 hover:border-command/40 hover:bg-surface min-w-0"
+            className="rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-border">
               <h2 className="text-lg sm:text-xl font-sans font-semibold text-foreground">

@@ -20,17 +20,23 @@ function formatDate(isoString: string): string {
 
 function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [activity, setActivity] = useState<GitHubActivityItem[]>(() => {
-    return getLocalCache<GitHubActivityItem[]>("activity:SGOD-pro") || [];
-  });
-  const [activityLoading, setActivityLoading] = useState(() => {
-    return !getLocalCache<GitHubActivityItem[]>("activity:SGOD-pro");
-  });
+  const [activity, setActivity] = useState<GitHubActivityItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   useReveal(containerRef, [activity]);
 
   useEffect(() => {
     let active = true;
+    const cached = getLocalCache<GitHubActivityItem[]>("activity:SGOD-pro");
+    if (cached && cached.length > 0) {
+      queueMicrotask(() => {
+        if (active) {
+          setActivity(cached);
+          setActivityLoading(false);
+        }
+      });
+    }
+
     fetch("/api/github/activity")
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to fetch activity"))))
       .then((data) => {

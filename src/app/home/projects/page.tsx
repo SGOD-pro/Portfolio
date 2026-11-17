@@ -339,7 +339,11 @@ function ProjectListView({
       {error && !loading && (
         <div className="rounded-xl border border-danger/30 bg-danger/10 p-5 text-xs font-mono">
           <p className="font-semibold text-danger">Failed to retrieve projects list</p>
-          <p className="mt-1 text-foreground/80">{error}</p>
+          <p className="mt-1 text-foreground/80">
+            {error === "fetch failed"
+              ? "Unable to reach GitHub API. Please check your network connection or GitHub token."
+              : error}
+          </p>
           <button
             type="button"
             onClick={onRetry}
@@ -351,7 +355,7 @@ function ProjectListView({
       )}
 
       {/* Honest Empty State */}
-      {!loading && !error && projectsData && projectsData.projects.length === 0 && (
+      {!loading && !error && (!projectsData || projectsData.projects.length === 0) && (
         <div className="rounded-xl border border-border bg-surface/80 p-8 text-center" data-reveal>
           <p className="text-sm font-sans font-medium text-foreground">
             No Public Repositories Found
@@ -378,7 +382,7 @@ function ProjectListView({
             <article
               key={project.name}
               data-reveal
-              className="group relative rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(247,247,242,0.04)] transition-all duration-150 hover:border-command/40 hover:bg-surface flex flex-col justify-between min-w-0"
+              className="group relative rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(247,247,242,0.04)] transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface flex flex-col justify-between min-w-0"
             >
               <div>
                 {/* Top Row: Full Name & Lifted-up Updated Chip */}
@@ -435,12 +439,8 @@ function ProjectsContent() {
   const projectParam = searchParams.get("project");
   const docParam = searchParams.get("doc") || "readme";
 
-  const [projectsData, setProjectsData] = useState<ProjectListResult | null>(() => {
-    return getLocalCache<ProjectListResult>("projects:SGOD-pro");
-  });
-  const [loading, setLoading] = useState(() => {
-    return !getLocalCache<ProjectListResult>("projects:SGOD-pro");
-  });
+  const [projectsData, setProjectsData] = useState<ProjectListResult | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const activeRequestIdRef = React.useRef(0);
   const abortControllerRef = React.useRef<AbortController | null>(null);
@@ -469,7 +469,14 @@ function ProjectsContent() {
       .catch((err: Error) => {
         if (err.name === "AbortError") return;
         if (reqId === activeRequestIdRef.current) {
-          setError(err.message || "Failed to load projects");
+          // If we already have cached projects, keep displaying them
+          const cached = getLocalCache<ProjectListResult>("projects:SGOD-pro");
+          if (cached && cached.projects && cached.projects.length > 0) {
+            setProjectsData(cached);
+            setError(null);
+          } else {
+            setError(err.message || "Failed to load projects");
+          }
           setLoading(false);
         }
       });
@@ -488,12 +495,24 @@ function ProjectsContent() {
   };
 
   useEffect(() => {
+    let active = true;
+    const cached = getLocalCache<ProjectListResult>("projects:SGOD-pro");
+    if (cached && cached.projects && cached.projects.length > 0) {
+      queueMicrotask(() => {
+        if (active) {
+          setProjectsData(cached);
+          setLoading(false);
+        }
+      });
+    }
+
     const controller = new AbortController();
     abortControllerRef.current = controller;
     const reqId = ++activeRequestIdRef.current;
     requestProjects(controller, reqId);
 
     return () => {
+      active = false;
       controller.abort();
     };
   }, [requestProjects]);

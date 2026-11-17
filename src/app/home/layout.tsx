@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import "./animation.css";
 
 function HomeLayout({
@@ -17,6 +18,7 @@ function HomeLayout({
   children: React.ReactNode;
   rightSide: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const sceneRef = useRef<HTMLCanvasElement | null>(null);
 
   const mainGlassRef = useRef<HTMLDivElement | null>(null);
@@ -154,7 +156,7 @@ function HomeLayout({
 
             {/* 2. Scrollable Page Content Area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-3.5 pr-2 pb-28 sm:pb-32 lg:pb-2 focus:outline-none terminal-scrollbar">
-              <div className="min-h-full flex flex-col slide-page">
+              <div key={pathname} className="min-h-full flex flex-col slide-page">
                 {children}
               </div>
             </div>

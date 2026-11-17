@@ -6,7 +6,7 @@ import { useReveal } from "@/hooks/useReveal";
 import TextReveal from "@/components/TextReveal";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import TerminalPrompt from "@/components/TerminalPrompt";
-import PdfCertificateViewer, { CertificateData } from "@/components/PdfCertificateViewer";
+import type { CertificateData } from "@/components/PdfCertificateViewer";
 
 export type Certificate = CertificateData;
 
@@ -97,7 +97,6 @@ export default function AchievementsPage() {
   useReveal(containerRef);
 
   const [activeCategory, setActiveCategory] = useState<"all" | "hackathons" | "courses">("all");
-  const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
 
   const filteredCerts = CERTIFICATES.filter((cert) => {
     if (activeCategory === "hackathons") return cert.category === "Hackathon";
@@ -228,10 +227,14 @@ export default function AchievementsPage() {
 
         <div className="grid gap-3.5 sm:grid-cols-2">
           {filteredCerts.map((cert) => (
-            <article
+            <a
               key={cert.id}
+              href={cert.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               data-reveal
-              className="rounded-xl border border-border bg-surface/80 backdrop-blur-md p-4 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex flex-col justify-between transition-all duration-150 hover:border-command/40 hover:bg-surface min-w-0"
+              className="group rounded-xl border border-border bg-surface/80 backdrop-blur-md p-4 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex flex-col justify-between transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0 cursor-pointer text-left block"
+              title={`Open ${cert.title} in Google Drive`}
             >
               <div>
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-border font-mono text-[10px]">
@@ -241,9 +244,14 @@ export default function AchievementsPage() {
                   <span className="text-muted/70">{cert.date}</span>
                 </div>
 
-                <h3 className="mt-2.5 text-base font-sans font-semibold text-foreground tracking-tight">
-                  {cert.title}
-                </h3>
+                <div className="mt-2.5 flex items-start justify-between gap-2">
+                  <h3 className="text-base font-sans font-semibold text-foreground tracking-tight group-hover:text-command transition-colors">
+                    {cert.title}
+                  </h3>
+                  <span className="text-command/70 group-hover:text-command text-sm font-mono transition-colors shrink-0 mt-0.5">
+                    ↗
+                  </span>
+                </div>
 
                 <p className="mt-1 text-xs text-command font-mono">
                   Issuer: {cert.issuer}
@@ -268,46 +276,21 @@ export default function AchievementsPage() {
               <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted/80">
                   <span className="text-success">●</span>
-                  <span className="truncate max-w-[150px] sm:max-w-[170px]" title={cert.fileName}>
+                  <span className="truncate max-w-[180px] sm:max-w-[220px]" title={cert.fileName}>
                     {cert.fileName}
                   </span>
                   <span className="text-muted/40">({cert.fileSize})</span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {cert.pdfUrl && (
-                    <a
-                      href={cert.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded border border-border bg-surface-secondary/40 px-2.5 py-1 text-[11px] font-mono text-muted hover:text-foreground hover:border-command/40 transition cursor-pointer flex items-center gap-1"
-                      title="Open verified PDF in Google Drive"
-                    >
-                      <span>Drive PDF</span>
-                      <span className="text-command">↗</span>
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCert(cert)}
-                    className="rounded border border-command/60 bg-command/10 px-2.5 py-1 text-[11px] font-mono text-command hover:bg-command/25 transition cursor-pointer"
-                  >
-                    Inspect Credential ↗
-                  </button>
+                <div className="inline-flex items-center gap-1 text-[11px] font-mono text-command group-hover:underline">
+                  <span>Drive PDF</span>
+                  <span>↗</span>
                 </div>
               </div>
-            </article>
+            </a>
           ))}
         </div>
       </section>
-
-      {/* Interactive PDF Certificate Viewer with Zoom, Pan & Drag Controllers */}
-      {selectedCert && (
-        <PdfCertificateViewer
-          certificate={selectedCert}
-          onClose={() => setSelectedCert(null)}
-        />
-      )}
 
       <footer data-reveal className="mt-8 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3 text-xs font-sans text-muted">
         <span>Looking to review complete engineering background or projects?</span>
