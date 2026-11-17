@@ -7,7 +7,7 @@ export interface StaticCodeFallbackProps {
 }
 
 export function StaticCodeFallback({
-  color = "#b46004",
+  color = "#D63825",
   height = 220,
   className = "",
 }: StaticCodeFallbackProps) {
@@ -17,11 +17,11 @@ export function StaticCodeFallback({
       style={{ height }}
       aria-label="Code icon"
     >
-      <div className="relative flex items-center justify-center p-6 rounded-2xl border border-segment/40 bg-surface-secondary/40 shadow-inner">
+      <div className="relative flex items-center justify-center p-6 rounded-2xl border border-border bg-surface-secondary/40 shadow-inner">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 16 16"
-          className="w-20 h-20 drop-shadow-[0_0_16px_rgba(180,96,4,0.5)] transition-transform hover:scale-105"
+          className="w-20 h-20 drop-shadow-[0_0_18px_rgba(214,56,37,0.35)] transition-transform hover:scale-105"
           fill="none"
         >
           <path

@@ -616,6 +616,40 @@ Repeat a fixed route-navigation sequence and inspect whether timers, active anim
 - [x] README and verification records match actual behavior.
 - [x] Final diff contains no unrelated changes.
 
+---
+
+## Phase 7. Portfolio Theme Migration: Theme 03 Dark
+
+Status: VERIFIED
+
+### Goals
+- Implement Theme 03 Dark as the portfolio default theme as specified in `design.md`.
+- Replace earlier amber-only palette with Theme 03 functional tokens:
+  - Canvas: `#0D1915` (Dark), `#F7F5EF` (Light)
+  - Card / Surface: `#15271F` (Dark), `#FFFFFF` (Light)
+  - Well / Secondary Surface: `#243E33` (Dark), `#EFF2EC` (Light)
+  - Featured Surface: `#264235` (Dark), `#48654C` (Light)
+  - Heading / Main Foreground: `#F7F7F2` (Dark), `#111A17` (Light)
+  - Secondary Text / Muted: `#A9B8AF` (Dark), `#53635A` (Light)
+  - Primary Action (Button): `#D63825` with hover `#C03826` and white text `#FFFFFF`
+  - Link & Focus: `#9CAF88` (Sage in Dark mode), `#102D25` (Evergreen in Light mode)
+  - Subtle Separator: `rgba(247,247,242,0.10)`
+  - Status tokens: Success `#66AA8C`, Warning `#CC9C55`, Danger `#D96E80`, Info `#6EA1CA`
+- Update DotGrid background to theme-derived neutral base (`#20332B`) and sage active (`#9CAF88`).
+- Update WebGL GlassSurface presets to calibrated Theme 03 specification: `borderRadius: 24`, `bevelWidth: 32`, `refraction: 0.85`, `thickness: 20`, `bevel: 0.5`, `distortion: 0`, `reflection: 0.8`, `shine: 0.65`, `dispersion: 0.02`, `frost: 0`, `borderWidth: 0.6`, `borderOpacity: 0.09`, `tint: "#FFFFFF"`, `tintOpacity: 0.01`, `maxDpr: 1.25`, `live: false`.
+- Recolor 3D Code object material to Theme 03 sage `#9CAF88` / `#102D25`.
+- Remove hardcoded amber `#b46004` and blue overrides across components and routes, replacing with semantic tokens.
+- Maintain existing real GitHub data, project document discovery, contact form delivery, routes, and GSAP motion choreography.
+- Verify through Playwright MCP across viewports (360x800, 390x844, 768x1024, 1440x900) and verify build, tests, and lint pass.
+
+### Acceptance
+- [x] Theme 03 Dark tokens configured as default in `src/app/globals.css`.
+- [x] DotGrid and GlassSurface optical parameters updated to `design.md` §7 specs.
+- [x] Primary action (Tomato `#D63825`), Sage links/focus (`#9CAF88`), and Evergreen surfaces applied.
+- [x] Hardcoded old amber `#b46004` and blue decorative colors removed.
+- [x] Unit tests (28/28), TypeScript, lint, and production build pass.
+- [x] Playwright MCP inspections verify appearance across all required viewports.
+
 ## Definition of Done
 
 All phases have evidence-backed results.

@@ -6,6 +6,7 @@ import type { GitHubActivityItem } from "@/lib/github/types";
 import { getLocalCache, setLocalCache } from "@/lib/client-cache";
 import { useReveal } from "@/hooks/useReveal";
 import TextReveal from "@/components/TextReveal";
+import TerminalPrompt from "@/components/TerminalPrompt";
 
 function formatDate(isoString: string): string {
   try {
@@ -54,10 +55,7 @@ function Home() {
   return (
     <div ref={containerRef} className="relative flex flex-col grow">
       {/* Linux prompt */}
-      <div className="my-1.5 flex items-center gap-2 text-xs font-mono" data-reveal>
-        <span className="text-field-placeholder font-bold">souvik@portfolio:~$</span>
-        <span className="text-command">whoami</span>
-      </div>
+      <TerminalPrompt command="whoami" />
 
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 grow items-start mt-2">
         {/* Left Column: Hero & Narrative */}
@@ -66,11 +64,11 @@ function Home() {
             text="Souvik Karmakar"
             className="text-3xl sm:text-4xl lg:text-[46px] font-sans font-semibold tracking-[-0.02em] text-foreground leading-[1.12]"
           />
-          <p className="mt-2 text-base sm:text-lg font-sans font-medium text-accent leading-snug">
+          <p className="mt-2 text-base sm:text-lg font-sans font-medium text-command leading-snug">
             Fullstack Developer &amp; Applied AI Engineer
           </p>
 
-          <div className="my-4 h-px w-full bg-white/10" />
+          <div className="my-4 h-px w-full bg-border" />
 
           <p className="text-base font-sans text-muted leading-[1.65] max-w-[58ch]">
             I build responsive web applications and applied AI tools. Focused on clean
@@ -86,23 +84,31 @@ function Home() {
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <Link
               href="/home/projects"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-accent text-accent-foreground px-4 py-2 text-sm font-sans font-medium hover:opacity-95 transition shadow-[0_2px_12px_rgba(180,96,4,0.3)] cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-accent text-accent-foreground px-4 py-2 text-sm font-sans font-medium hover:bg-accent-hover transition shadow-[0_2px_12px_rgba(214,56,37,0.3)] cursor-pointer"
             >
               View projects →
             </Link>
             <Link
               href="/home/contact"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-sans font-medium text-foreground hover:bg-white/[0.08] hover:border-white/25 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-secondary/40 px-4 py-2 text-sm font-sans font-medium text-foreground hover:bg-surface-secondary/80 hover:border-command/30 transition cursor-pointer"
             >
               Get in touch
             </Link>
+            <a
+              href="https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-command/40 bg-command/10 px-4 py-2 text-sm font-sans font-medium text-command hover:bg-command/20 hover:border-command transition cursor-pointer"
+            >
+              Resume ↗
+            </a>
           </div>
         </section>
 
         {/* Right Column: Public Engineering Activity */}
         <section data-reveal className="lg:col-span-5 flex flex-col gap-4">
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="rounded-xl border border-border bg-surface/80 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
               <h2 className="text-xs uppercase tracking-wider text-muted font-sans font-semibold">
                 Recent Public Activity
               </h2>
@@ -118,7 +124,7 @@ function Home() {
                 {activity.map((item) => (
                   <li
                     key={item.id}
-                    className="flex flex-col gap-1 rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5 text-xs transition hover:border-white/20"
+                    className="flex flex-col gap-1 rounded-lg border border-border bg-surface-secondary/30 p-2.5 text-xs transition hover:border-command/40"
                   >
                     <div className="flex items-center justify-between font-mono text-[11px]">
                       <span className="text-foreground font-medium truncate max-w-[200px]">
@@ -141,7 +147,7 @@ function Home() {
                   href="https://github.com/SGOD-pro"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-block text-xs font-mono text-accent hover:underline"
+                  className="mt-2 inline-block text-xs font-mono text-command hover:underline"
                 >
                   Inspect SGOD-pro on GitHub ↗
                 </a>

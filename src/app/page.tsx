@@ -35,16 +35,16 @@ export default function Index() {
         <div className="p-5 font-mono text-sm space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-field-placeholder">user@portfolio:$</span>
-            <span className="text-accent font-semibold">whoami</span>
+            <span className="text-command font-semibold">whoami</span>
           </div>
           <div className="text-foreground pl-2 border-l border-segment/60 py-1 text-xs sm:text-sm">
-            <p className="font-bold text-accent">Souvik Karmakar</p>
-            <p className="text-muted">Fullstack Developer &amp; Systems Engineer</p>
+            <p className="font-bold text-foreground">Souvik Karmakar</p>
+            <p className="text-muted">Fullstack Developer &amp; Applied AI Engineer</p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
             <Link
               href="/home"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-accent text-accent-foreground px-5 py-2.5 text-xs uppercase font-bold tracking-wider hover:opacity-90 active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-2 min-h-[44px]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-accent text-accent-foreground px-5 py-2.5 text-xs uppercase font-bold tracking-wider hover:bg-accent-hover active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-2 min-h-[44px]"
             >
               <span>Enter Portfolio</span>
               <span aria-hidden="true">&rarr;</span>

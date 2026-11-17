@@ -102,8 +102,8 @@ const buildMaterial = (
 
 function CodeIcon3D({
   extrudeDepth = 0.6,
-  color = "#b46004",
-  emissiveColor = "#b46004",
+  color = "#D63825",
+  emissiveColor = "#3F1A13",
   size = 3,
   rotationSpeed = 0.3,
   metalness = 0.5,
@@ -353,7 +353,7 @@ export default function InteractiveCodeIcon({
   background = "transparent",
   enableZoom = false,
   resetOnRelease = true,
-  color = "#b46004",
+  color = "#D63825",
   autoRotate = true,
   pauseOnHover = true,
   rotationSpeed = 0.5,
@@ -415,11 +415,11 @@ export default function InteractiveCodeIcon({
             gl.toneMappingExposure = 1.2;
           }}
         >
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[6, 6, 6]} intensity={1.8} />
-          <directionalLight position={[-6, -3, 4]} intensity={0.8} color="#7c3aed" />
-          <pointLight position={[-4, -3, 4]} intensity={0.8} color="#06b6d4" />
-          <pointLight position={[4, 3, -4]} intensity={0.8} color="#f59e0b" />
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[6, 6, 6]} intensity={1.8} color="#F7F7F2" />
+          <directionalLight position={[-6, -3, 4]} intensity={0.8} color="#243E33" />
+          <pointLight position={[-4, -3, 4]} intensity={0.8} color="#9CAF88" />
+          <pointLight position={[4, 3, -4]} intensity={0.6} color="#9CAF88" />
 
           <React.Suspense fallback={null}>
             <CodeIcon3D

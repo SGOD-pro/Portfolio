@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useRef } from "react";
 import { useReveal } from "@/hooks/useReveal";
 import TextReveal from "@/components/TextReveal";
+import TerminalPrompt from "@/components/TerminalPrompt";
 
 type FormState = {
   name: string;
@@ -78,10 +79,7 @@ function Contact() {
   return (
     <div ref={containerRef} className="relative flex flex-col grow">
       {/* Linux prompt at top left */}
-      <div className="my-1.5 flex items-center gap-2 text-xs font-mono" data-reveal>
-        <span className="text-field-placeholder font-bold">souvik@portfolio:~$</span>
-        <span className="text-command">contact</span>
-      </div>
+      <TerminalPrompt command="contact" />
 
       <header className="mt-1.5 mb-3">
         <TextReveal
@@ -97,7 +95,7 @@ function Contact() {
         {/* Contact Form Section */}
         <section
           data-reveal
-          className="lg:col-span-7 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+          className="lg:col-span-7 rounded-xl border border-border bg-surface/80 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
         >
           <h2 className="text-base sm:text-lg font-sans font-semibold text-foreground mb-3">
             Send a Message
@@ -116,8 +114,8 @@ function Contact() {
                   placeholder="e.g. Alex Chen"
                   value={formState.name}
                   onChange={handleChange("name")}
-                  className={`w-full rounded-lg border bg-white/[0.03] px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent ${
-                    errors.name ? "border-danger/70 ring-1 ring-danger/60" : "border-white/15"
+                  className={`w-full rounded-lg border bg-surface-secondary/40 px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/60 focus:outline-none focus:border-command focus:ring-1 focus:ring-command ${
+                    errors.name ? "border-danger/70 ring-1 ring-danger/60" : "border-border"
                   }`}
                 />
                 {errors.name && <p className="mt-1 text-[11px] text-danger font-sans">{errors.name}</p>}
@@ -134,8 +132,8 @@ function Contact() {
                   placeholder="e.g. alex@example.com"
                   value={formState.email}
                   onChange={handleChange("email")}
-                  className={`w-full rounded-lg border bg-white/[0.03] px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent ${
-                    errors.email ? "border-danger/70 ring-1 ring-danger/60" : "border-white/15"
+                  className={`w-full rounded-lg border bg-surface-secondary/40 px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/60 focus:outline-none focus:border-command focus:ring-1 focus:ring-command ${
+                    errors.email ? "border-danger/70 ring-1 ring-danger/60" : "border-border"
                   }`}
                 />
                 {errors.email && <p className="mt-1 text-[11px] text-danger font-sans">{errors.email}</p>}
@@ -152,8 +150,8 @@ function Contact() {
                 placeholder="e.g. Fullstack Engineer Role / Project Inquiry"
                 value={formState.subject}
                 onChange={handleChange("subject")}
-                className={`w-full rounded-lg border bg-white/[0.03] px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent ${
-                  errors.subject ? "border-danger/70 ring-1 ring-danger/60" : "border-white/15"
+                className={`w-full rounded-lg border bg-surface-secondary/40 px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/60 focus:outline-none focus:border-command focus:ring-1 focus:ring-command ${
+                  errors.subject ? "border-danger/70 ring-1 ring-danger/60" : "border-border"
                 }`}
               />
               {errors.subject && <p className="mt-1 text-[11px] text-danger font-sans">{errors.subject}</p>}
@@ -169,8 +167,8 @@ function Contact() {
                 placeholder="Describe your role, project, or question..."
                 value={formState.message}
                 onChange={handleChange("message")}
-                className={`w-full rounded-lg border bg-white/[0.03] px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/50 focus:outline-none focus:border-accent leading-relaxed ${
-                  errors.message ? "border-danger/70 ring-1 ring-danger/60" : "border-white/15"
+                className={`w-full rounded-lg border bg-surface-secondary/40 px-3 py-1.5 text-xs font-sans text-foreground placeholder:text-muted/60 focus:outline-none focus:border-command focus:ring-1 focus:ring-command leading-relaxed ${
+                  errors.message ? "border-danger/70 ring-1 ring-danger/60" : "border-border"
                 }`}
               />
               {errors.message && <p className="mt-1 text-[11px] text-danger font-sans">{errors.message}</p>}
@@ -182,19 +180,19 @@ function Contact() {
               </p>
               <button
                 type="submit"
-                className="rounded-lg bg-accent text-accent-foreground px-3.5 py-1.5 text-xs font-sans font-medium hover:opacity-95 transition shadow-[0_2px_12px_rgba(180,96,4,0.3)] cursor-pointer"
+                className="rounded-lg bg-accent text-accent-foreground px-4 py-2 text-xs font-sans font-semibold hover:bg-accent-hover transition shadow-[0_2px_12px_rgba(214,56,37,0.3)] cursor-pointer"
               >
                 Send via Email →
               </button>
             </div>
 
             {submitted && (
-              <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-xs font-sans text-foreground">
+              <div className="rounded-lg border border-command/40 bg-command/15 p-3 text-xs font-sans text-foreground">
                 Email draft opened in your email client. If it did not open automatically, you can also write directly to{" "}
                 <button
                   type="button"
                   onClick={handleCopyEmail}
-                  className="font-mono text-accent underline ml-1 cursor-pointer"
+                  className="font-mono text-command underline ml-1 cursor-pointer"
                 >
                   souvik.dev07@gmail.com
                 </button>
@@ -206,53 +204,53 @@ function Contact() {
 
         {/* Direct Channels Sidebar */}
         <aside className="lg:col-span-5 flex flex-col gap-4" data-reveal>
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-            <h2 className="text-xs uppercase tracking-wider text-muted font-sans font-semibold pb-3 border-b border-white/10">
+          <div className="rounded-xl border border-border bg-surface/80 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+            <h2 className="text-xs uppercase tracking-wider text-muted font-sans font-semibold pb-3 border-b border-border">
               Direct Channels
             </h2>
 
             <div className="mt-4 space-y-3">
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3.5">
+              <div className="rounded-lg border border-border bg-surface-secondary/30 p-3.5">
                 <p className="text-xs font-sans text-muted">Email</p>
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <a
                     href="mailto:souvik.dev07@gmail.com"
-                    className="text-sm font-mono text-foreground hover:text-accent truncate"
+                    className="text-sm font-mono text-foreground hover:text-command truncate"
                   >
                     souvik.dev07@gmail.com
                   </a>
                   <button
                     type="button"
                     onClick={handleCopyEmail}
-                    className="rounded border border-white/10 px-2 py-0.5 text-xs font-mono text-muted hover:text-foreground shrink-0 cursor-pointer"
+                    className="rounded border border-border px-2 py-0.5 text-xs font-mono text-muted hover:text-foreground shrink-0 cursor-pointer"
                   >
                     {copied ? "Copied!" : "Copy"}
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3.5">
+              <div className="rounded-lg border border-border bg-surface-secondary/30 p-3.5">
                 <p className="text-xs font-sans text-muted">GitHub</p>
                 <div className="mt-1">
                   <Link
                     href="https://github.com/SGOD-pro"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-mono text-accent hover:underline inline-flex items-center gap-1"
+                    className="text-sm font-mono text-command hover:underline inline-flex items-center gap-1"
                   >
                     github.com/SGOD-pro ↗
                   </Link>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3.5">
+              <div className="rounded-lg border border-border bg-surface-secondary/30 p-3.5">
                 <p className="text-xs font-sans text-muted">LinkedIn</p>
                 <div className="mt-1">
                   <Link
                     href="https://linkedin.com/in/souvik-karmakar"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-mono text-accent hover:underline inline-flex items-center gap-1"
+                    className="text-sm font-mono text-command hover:underline inline-flex items-center gap-1"
                   >
                     linkedin.com/in/souvik-karmakar ↗
                   </Link>

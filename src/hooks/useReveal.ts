@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type RefObject } from "react";
+import { type RefObject } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -18,12 +18,11 @@ export interface RevealOptions {
 }
 
 /**
- * Coherent, restrained component entrance using GSAP.
+ * Snappy card and component entrance using GSAP.
  * - Single motion owner: GSAP coordinates all page and card entrances.
- * - Tracks revealed elements via WeakSet so newly loaded cards reveal cleanly without re-animating visible items.
- * - Small upward movement (8px), power2.out, ~0.3s duration, 0.04s stagger.
- * - Respects prefers-reduced-motion: reduce immediately.
- * - Cleans up inline styles once settled so layout and stacking contexts remain pristine.
+ * - Cards and sections glide up smoothly (distance: 10px, power2.out, duration: 0.28s, stagger: 0.035s).
+ * - Respects prefers-reduced-motion: settles immediately.
+ * - Cleans up inline styles once settled so hover and stacking contexts remain pristine.
  */
 export function useReveal(
   containerRef: RefObject<HTMLElement | null>,
@@ -32,23 +31,16 @@ export function useReveal(
 ) {
   const {
     selector = "[data-reveal]",
-    distance = 8,
-    duration = 0.3,
-    stagger = 0.04,
-    delay = 0,
-    resetOnDepsChange = false,
+    distance = 10,
+    duration = 0.28,
+    stagger = 0.035,
+    delay = 0.02,
   } = options;
-
-  const revealedElementsRef = useRef<WeakSet<Element>>(new WeakSet());
 
   useGSAP(
     () => {
       if (!containerRef.current) return;
       if (typeof window === "undefined") return;
-
-      if (resetOnDepsChange) {
-        revealedElementsRef.current = new WeakSet();
-      }
 
       const container = containerRef.current;
       const allTargets = Array.from(container.querySelectorAll(selector));
@@ -57,25 +49,12 @@ export function useReveal(
 
       // Handle reduced motion
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        allTargets.forEach((el) => {
-          gsap.set(el, { opacity: 1, y: 0, clearProps: "opacity,transform" });
-          revealedElementsRef.current.add(el);
-        });
+        gsap.set(allTargets, { opacity: 1, y: 0, clearProps: "opacity,transform" });
         return;
       }
 
-      // Filter only elements not yet revealed
-      const newTargets = allTargets.filter(
-        (el) => !revealedElementsRef.current.has(el)
-      );
-
-      if (newTargets.length === 0) return;
-
-      // Mark targets immediately to avoid double-triggers
-      newTargets.forEach((el) => revealedElementsRef.current.add(el));
-
       gsap.fromTo(
-        newTargets,
+        allTargets,
         {
           opacity: 0,
           y: distance,
@@ -94,7 +73,7 @@ export function useReveal(
     {
       scope: containerRef,
       dependencies,
-      revertOnUpdate: false,
+      revertOnUpdate: true,
     }
   );
 }

@@ -16,7 +16,7 @@ import AnimatedLanguageBar from "@/components/AnimatedLanguageBar";
 
 const CodeIcon3D = dynamic(() => import("@/components/3DCode"), {
   ssr: false,
-  loading: () => <StaticCodeFallback color="#b46004" height={220} />,
+  loading: () => <StaticCodeFallback color="#D63825" height={220} />,
 });
 
 const REPO_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
@@ -100,11 +100,11 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
   if (loading) {
     return (
       <div className="flex flex-col gap-3 font-mono text-[11px] p-2 animate-pulse">
-        <div className="h-3 w-28 bg-white/10 rounded" />
-        <div className="h-5 w-40 bg-white/10 rounded" />
-        <div className="h-12 w-full bg-white/5 rounded" />
-        <Separator className="my-2 border-white/10" />
-        <div className="h-20 w-full bg-white/5 rounded" />
+        <div className="h-3 w-28 bg-surface-secondary rounded" />
+        <div className="h-5 w-40 bg-surface-secondary rounded" />
+        <div className="h-12 w-full bg-surface-secondary/60 rounded" />
+        <Separator className="my-2 border-border" />
+        <div className="h-20 w-full bg-surface-secondary/60 rounded" />
       </div>
     );
   }
@@ -119,7 +119,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         </p>
         <Link
           href="/home/projects"
-          className="mt-2 text-accent text-xs underline underline-offset-2 hover:text-accent/80"
+          className="mt-2 text-command text-xs underline underline-offset-2 hover:text-command/80"
         >
           ← Return to project list
         </Link>
@@ -141,7 +141,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         </span>
         <Link
           href="/home/projects"
-          className="text-[9px] text-muted hover:text-accent transition uppercase tracking-wider"
+          className="text-[9px] text-muted hover:text-command transition uppercase tracking-wider"
         >
           [CLOSE]
         </Link>
@@ -164,7 +164,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
           href={repo.htmlUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[10px] text-accent hover:border-accent hover:bg-white/[0.08] transition"
+          className="inline-flex items-center gap-1.5 rounded border border-border bg-surface-secondary/40 px-2.5 py-1 text-[10px] text-command hover:border-accent hover:text-accent hover:bg-accent/10 transition"
         >
           <span>GitHub</span>
           <span>↗</span>
@@ -183,7 +183,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         )}
       </div>
 
-      <Separator className="my-3 border-white/10" />
+      <Separator className="my-3 border-border" />
 
       {/* Document View Switcher */}
       <div data-reveal>
@@ -193,20 +193,22 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         <div className="grid grid-cols-2 gap-1.5">
           <Link
             href={`/home/projects?project=${encodeURIComponent(project)}&doc=readme`}
+            aria-selected={activeDoc !== "architecture"}
             className={`rounded px-2 py-1 text-center text-[10px] font-mono transition ${
               activeDoc !== "architecture"
-                ? "border border-accent text-accent bg-accent/20 font-semibold"
-                : "border border-white/10 text-muted hover:text-foreground hover:border-white/20"
+                ? "border border-command text-command bg-command/20 font-semibold"
+                : "border border-border text-muted hover:text-accent hover:border-accent/40"
             }`}
           >
             README.md
           </Link>
           <Link
             href={`/home/projects?project=${encodeURIComponent(project)}&doc=architecture`}
+            aria-selected={activeDoc === "architecture"}
             className={`rounded px-2 py-1 text-center text-[10px] font-mono transition ${
               activeDoc === "architecture"
-                ? "border border-accent text-accent bg-accent/20 font-semibold"
-                : "border border-white/10 text-muted hover:text-foreground hover:border-white/20"
+                ? "border border-command text-command bg-command/20 font-semibold"
+                : "border border-border text-muted hover:text-accent hover:border-accent/40"
             }`}
           >
             Architecture
@@ -214,7 +216,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         </div>
       </div>
 
-      <Separator className="my-3 border-white/10" />
+      <Separator className="my-3 border-border" />
 
       {/* Programming Languages Breakdown */}
       <div data-reveal>
@@ -228,12 +230,12 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
               const pctDisplay =
                 pctNumber < 0.1 && pctNumber > 0 ? "< 0.1%" : `${pctNumber.toFixed(1)}%`;
               const colors = [
-                "bg-accent",
-                "bg-warning",
                 "bg-command",
+                "bg-warning",
+                "bg-accent",
                 "bg-success",
                 "bg-danger",
-                "bg-purple-400",
+                "bg-[#6EA1CA]",
               ];
               const color = colors[idx % colors.length];
 
@@ -256,7 +258,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         )}
       </div>
 
-      <Separator className="my-3 border-white/10" />
+      <Separator className="my-3 border-border" />
 
       {/* Repository Timeline / Dates */}
       <div data-reveal>
@@ -274,10 +276,10 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Stars / Forks:</span>
-            <span className="text-accent inline-flex items-center gap-1.5">
+            <span className="text-command inline-flex items-center gap-1.5">
               <span>★</span>
               <AnimatedNumber value={repo.stargazersCount} />
-              <span className="text-white/20">·</span>
+              <span className="text-muted/40">·</span>
               <span>⑂</span>
               <AnimatedNumber value={repo.forksCount} />
             </span>
@@ -288,7 +290,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
       <div className="mt-auto pt-4">
         <Link
           href="/home/projects"
-          className="w-full text-center block rounded border border-white/10 py-1.5 text-[10px] text-muted hover:text-foreground hover:border-white/30 transition"
+          className="w-full text-center block rounded border border-border py-1.5 text-[10px] text-muted hover:text-foreground hover:border-command/40 transition"
         >
           ← Return to project list
         </Link>
@@ -298,12 +300,17 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
 }
 
 function DefaultSidebar() {
-  const [profile, setProfile] = useState<GitHubProfile | null>(() => {
-    return getLocalCache<GitHubProfile>("profile:SGOD-pro");
-  });
+  const [profile, setProfile] = useState<GitHubProfile | null>(null);
 
   useEffect(() => {
     let active = true;
+    const cached = getLocalCache<GitHubProfile>("profile:SGOD-pro");
+    if (cached) {
+      queueMicrotask(() => {
+        if (active) setProfile(cached);
+      });
+    }
+
     fetch("/api/github/profile")
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed"))))
       .then((data) => {
@@ -319,14 +326,20 @@ function DefaultSidebar() {
     };
   }, []);
 
+  const displayName = profile?.name
+    ? profile.name.toLowerCase() === "souvik karmakar"
+      ? "Souvik Karmakar"
+      : profile.name
+    : "Souvik Karmakar";
+
   return (
     <div className="relative flex flex-col w-full h-full p-2 sm:p-3 font-mono group">
       {/* 3D Code Block */}
       <div className="h-[170px] w-full relative flex items-center justify-center overflow-hidden shrink-0">
         <CodeIcon3D
           extrudeDepth={1.2}
-          color="#b46004"
-          emissiveColor="#b46004"
+          color="#D63825"
+          emissiveColor="#3F1A13"
           size={3}
           rotationSpeed={0.5}
           metalness={0.5}
@@ -345,11 +358,11 @@ function DefaultSidebar() {
       {/* Hover text under the 3D block */}
       <div className="text-center min-h-[22px] py-1 transition-all">
         <p className="text-[11px] tracking-wider font-mono text-muted/90 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          CODE WITH <span className="text-accent font-bold">CAFFINE</span>
+          CODE WITH <span className="text-accent font-bold">CAFFEINE</span>
         </p>
       </div>
 
-      <Separator className="my-2 border-white/10" />
+      <Separator className="my-2 border-border" />
 
       {/* GitHub Profile Picture & Stats */}
       <div className="flex items-center gap-3.5 py-2.5 px-1 shrink-0">
@@ -357,10 +370,10 @@ function DefaultSidebar() {
           href="https://github.com/SGOD-pro"
           target="_blank"
           rel="noopener noreferrer"
-          className="relative group/avatar focus-visible:outline-2 focus-visible:outline-accent rounded-full transition-transform hover:scale-105 shrink-0"
+          className="relative group/avatar focus-visible:outline-2 focus-visible:outline-focus rounded-full transition-transform hover:scale-105 shrink-0"
           title="View SGOD-pro on GitHub"
         >
-          <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-full p-0.5 border border-white/20 bg-white/[0.04] group-hover/avatar:border-accent transition-all duration-300 shadow-[0_0_18px_rgba(180,96,4,0.3)]">
+          <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-full p-0.5 border border-border bg-surface-secondary/40 group-hover/avatar:border-command transition-all duration-300 shadow-[0_0_18px_rgba(156,175,136,0.25)]">
             <Image
               unoptimized
               src="https://github.com/SGOD-pro.png?size=200"
@@ -372,7 +385,7 @@ function DefaultSidebar() {
             />
           </div>
           <span
-            className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-success border-2 border-background shadow-[0_0_8px_rgba(34,197,94,0.6)]"
+            className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-success border-2 border-background shadow-[0_0_8px_rgba(102,170,140,0.6)]"
             title="Active"
           />
         </a>
@@ -380,8 +393,11 @@ function DefaultSidebar() {
         {/* Stats beside profile picture */}
         <div className="flex flex-col min-w-0 font-mono">
           <div className="flex items-center gap-1.5 truncate">
-            <span className="text-xs sm:text-[13px] font-semibold text-foreground truncate">
-              {profile?.name || "Souvik Karmakar"}
+            <span
+              suppressHydrationWarning
+              className="text-xs sm:text-[13px] font-semibold text-foreground truncate"
+            >
+              {displayName}
             </span>
           </div>
           <span className="text-[10px] text-muted -mt-0.5 mb-1.5 block">
@@ -391,21 +407,21 @@ function DefaultSidebar() {
           {/* Contributions + Followers + Following */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
             <span className="inline-flex items-center gap-1" title="Contributions in the last year">
-              <strong className="text-accent font-bold">
+              <strong className="text-command font-bold" suppressHydrationWarning>
                 <AnimatedNumber value={profile?.totalContributions || 833} />
               </strong>
               <span className="text-muted/80">contribs</span>
             </span>
-            <span className="text-white/20">·</span>
+            <span className="text-muted/40">·</span>
             <span className="inline-flex items-center gap-1" title="GitHub Followers">
-              <strong className="text-foreground font-semibold">
+              <strong className="text-foreground font-semibold" suppressHydrationWarning>
                 <AnimatedNumber value={profile?.followers ?? 8} />
               </strong>
               <span className="text-muted/80">followers</span>
             </span>
-            <span className="text-white/20">·</span>
+            <span className="text-muted/40">·</span>
             <span className="inline-flex items-center gap-1" title="GitHub Following">
-              <strong className="text-foreground font-semibold">
+              <strong className="text-foreground font-semibold" suppressHydrationWarning>
                 <AnimatedNumber value={profile?.following ?? 2} />
               </strong>
               <span className="text-muted/80">following</span>
@@ -414,7 +430,7 @@ function DefaultSidebar() {
         </div>
       </div>
 
-      <Separator className="my-2 border-white/10" />
+      <Separator className="my-2 border-border" />
 
       <aside className="w-full">
         <h2 className="text-[9px] uppercase tracking-widest text-muted/80 font-mono font-medium">Connect</h2>
@@ -424,12 +440,12 @@ function DefaultSidebar() {
               href="https://github.com/SGOD-pro"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded"
+              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
             >
-              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold">
+              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
                 GitHub
               </span>
-              <span className="truncate w-full text-command lowercase text-xs font-mono">
+              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
                 github.com/SGOD-pro
               </span>
             </Link>
@@ -440,12 +456,12 @@ function DefaultSidebar() {
               href="https://www.linkedin.com/in/souvik-karmakar-578097274/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded"
+              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
             >
-              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold">
+              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
                 LinkedIn
               </span>
-              <span className="truncate w-full text-command lowercase text-xs font-mono">
+              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
                 linkedin.com/in/souvik-karmakar
               </span>
             </Link>
@@ -454,15 +470,35 @@ function DefaultSidebar() {
           <LineBox className="w-full">
             <Link
               href="mailto:souvik.dev07@gmail.com"
-              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded"
+              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
             >
-              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold">
+              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
                 Email
               </span>
-              <span className="truncate w-full text-command lowercase text-xs font-mono">
+              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
                 souvik.dev07@gmail.com
               </span>
             </Link>
+          </LineBox>
+
+          <LineBox className="w-full">
+            <a
+              href="https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
+              title="Open Souvik Karmakar's official Resume in Google Drive"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
+                  Resume / CV
+                </span>
+                <span className="text-[10px] text-command group-hover:text-accent font-mono transition-colors">[PDF ↗]</span>
+              </div>
+              <span className="truncate w-full text-command group-hover:text-accent lowercase text-xs font-mono transition-colors">
+                drive.google.com/.../resume.pdf
+              </span>
+            </a>
           </LineBox>
         </section>
       </aside>
@@ -488,7 +524,7 @@ function RightSideContent() {
 
 export default function RightSide() {
   return (
-    <Suspense fallback={<StaticCodeFallback color="#b46004" height={220} />}>
+    <Suspense fallback={<StaticCodeFallback color="#D63825" height={220} />}>
       <RightSideContent />
     </Suspense>
   );

@@ -1,19 +1,22 @@
-/* GSAP is the sole owner of page-content entrance choreography.
-   Native ViewTransition snapshots are disabled to prevent competing animations,
-   freezing, and double-transitions. */
-
-::view-transition,
-::view-transition-group(*),
-::view-transition-old(*),
-::view-transition-new(*) {
-  animation: none !important;
+/* Smooth, hardware-accelerated page entrance */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Ensure shell header, footer, background never transition */
-.fixed,
-header,
-footer,
-aside,
-[data-static] {
-  view-transition-name: none !important;
+.slide-page {
+  animation: pageEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-page {
+    animation: none !important;
+  }
 }

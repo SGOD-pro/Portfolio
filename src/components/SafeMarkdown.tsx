@@ -38,8 +38,8 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
   };
 
   return (
-    <div className="my-3 rounded-lg border border-white/10 bg-black/40 overflow-hidden font-mono text-xs">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10 bg-white/[0.02] text-[10px] text-muted">
+    <div className="my-3 rounded-lg border border-border bg-surface-secondary/40 overflow-hidden font-mono text-xs">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-surface-secondary/60 text-[10px] text-muted">
         <span className="uppercase tracking-wider">{language || "text"}</span>
         <button
           type="button"
@@ -87,7 +87,7 @@ function renderInline(
             src={src}
             alt={alt}
             loading="lazy"
-            className="max-w-full h-auto rounded border border-white/10 shadow-sm"
+            className="max-w-full h-auto rounded border border-border shadow-sm"
           />
         </span>
       );
@@ -108,7 +108,7 @@ function renderInline(
           href={href}
           target={isInternalAnchor ? undefined : "_blank"}
           rel={isInternalAnchor ? undefined : "noopener noreferrer"}
-          className="text-accent underline underline-offset-2 hover:text-accent/80 transition"
+          className="text-command underline underline-offset-2 hover:text-command/80 transition"
         >
           {renderInline(label, owner, repoName, branch, docPath)}
         </a>
@@ -123,7 +123,7 @@ function renderInline(
       elements.push(
         <code
           key={`code-${keyIndex++}`}
-          className="rounded bg-white/10 px-1 py-0.5 text-accent font-mono text-[10px] sm:text-[11px]"
+          className="rounded bg-surface-secondary/70 border border-border px-1 py-0.5 text-command font-mono text-[10px] sm:text-[11px]"
         >
           {codeMatch[1]}
         </code>
@@ -275,7 +275,7 @@ export default function SafeMarkdown({
           <h1
             key={`h-${blockKey++}`}
             id={id}
-            className="text-base sm:text-lg font-bold font-mono tracking-tight text-foreground mt-4 mb-2 pb-1 border-b border-white/10"
+            className="text-base sm:text-lg font-bold font-mono tracking-tight text-foreground mt-4 mb-2 pb-1 border-b border-border"
           >
             {inline}
           </h1>
@@ -285,7 +285,7 @@ export default function SafeMarkdown({
           <h2
             key={`h-${blockKey++}`}
             id={id}
-            className="text-sm sm:text-base font-bold font-mono tracking-tight text-accent mt-3.5 mb-1.5 pb-0.5 border-b border-white/5"
+            className="text-sm sm:text-base font-bold font-mono tracking-tight text-command mt-3.5 mb-1.5 pb-0.5 border-b border-border/50"
           >
             {inline}
           </h2>
@@ -317,7 +317,7 @@ export default function SafeMarkdown({
 
     // 3. Horizontal Rule
     if (/^(\*\*\*|---|___)$/.test(line.trim())) {
-      nodes.push(<hr key={`hr-${blockKey++}`} className="my-3 border-white/10" />);
+      nodes.push(<hr key={`hr-${blockKey++}`} className="my-3 border-border" />);
       i++;
       continue;
     }
@@ -332,7 +332,7 @@ export default function SafeMarkdown({
       nodes.push(
         <blockquote
           key={`quote-${blockKey++}`}
-          className="border-l-2 border-accent/80 bg-white/[0.02] pl-3 py-1.5 my-2.5 text-[11px] sm:text-xs text-muted font-mono italic leading-relaxed"
+          className="border-l-2 border-command/80 bg-surface-secondary/20 pl-3 py-1.5 my-2.5 text-[11px] sm:text-xs text-muted font-mono italic leading-relaxed"
         >
           {renderInline(quoteLines.join(" "), owner, repoName, branch, docPath)}
         </blockquote>
@@ -363,11 +363,11 @@ export default function SafeMarkdown({
       nodes.push(
         <div
           key={`table-${blockKey++}`}
-          className="my-3 overflow-x-auto rounded border border-white/10 bg-black/20"
+          className="my-3 overflow-x-auto rounded border border-border bg-surface-secondary/20"
         >
           <table className="w-full text-left font-mono text-[11px]">
             <thead>
-              <tr className="border-b border-white/10 bg-white/[0.04]">
+              <tr className="border-b border-border bg-surface-secondary/40">
                 {headerRow.map((h, hIdx) => (
                   <th key={hIdx} className="px-3 py-1.5 text-muted font-semibold uppercase text-[10px]">
                     {renderInline(h, owner, repoName, branch, docPath)}
@@ -375,7 +375,7 @@ export default function SafeMarkdown({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-border">
               {bodyRows.map((r, rIdx) => (
                 <tr key={rIdx} className="hover:bg-white/[0.02]">
                   {r.map((cell, cIdx) => (

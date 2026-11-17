@@ -2,48 +2,6 @@
 @import "@heroui/styles";
 
 :root,
-.light,
-[data-theme="light"] {
-  /* Theme Colors (Light Mode) */
-  --accent: oklch(57.57% 0.1379 57.15);
-  --accent-foreground: oklch(99.11% 0 0);
-  --background: oklch(97.02% 0.0011 57.15);
-  --border: oklch(90% 0.0011 57.15);
-  --danger: oklch(65.32% 0.2333 2.14);
-  --danger-foreground: oklch(99.11% 0 0);
-  --default: oklch(94% 0.0011 57.15);
-  --default-foreground: oklch(21.03% 0.0059 57.15);
-  --field-background: oklch(100% 0.0006 57.15);
-  --field-foreground: oklch(21.03% 0.0011 57.15);
-  --field-placeholder: oklch(55.17% 0.0022 57.15);
-  --focus: oklch(57.57% 0.1379 57.15);
-  --foreground: oklch(21.03% 0.0011 57.15);
-  --muted: oklch(55.17% 0.0022 57.15);
-  --overlay: oklch(100% 0.0003 57.15);
-  --overlay-foreground: oklch(21.03% 0.0011 57.15);
-  --scrollbar: oklch(87.1% 0.0011 57.15);
-  --segment: oklch(100% 0.0011 57.15);
-  --segment-foreground: oklch(21.03% 0.0011 57.15);
-  --separator: oklch(92% 0.0011 57.15);
-  --success: oklch(73.29% 0.1939 127.21);
-  --success-foreground: oklch(21.03% 0.0059 127.21);
-  --surface: oklch(100% 0.0006 57.15);
-  --surface-foreground: oklch(21.03% 0.0011 57.15);
-  --surface-secondary: oklch(95.24% 0.0009 57.15);
-  --surface-secondary-foreground: oklch(21.03% 0.0011 57.15);
-  --surface-tertiary: oklch(93.73% 0.0009 57.15);
-  --surface-tertiary-foreground: oklch(21.03% 0.0011 57.15);
-  --warning: oklch(78.19% 0.1588 48.73);
-  --warning-foreground: oklch(21.03% 0.0059 48.73);
-  --command: oklch(56.106% 0.12114 245.967);
-  /* Border Radius */
-  --radius: 0.5rem;
-  --field-radius: 0.75rem;
-  /* Font Families */
-  --font-sans: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
 .dark,
 .default,
 [data-theme="dark"],
@@ -51,41 +9,107 @@
   color-scheme: dark;
   --font-sans: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  /* Theme Colors (Dark Mode) */
-  --accent: oklch(57.57% 0.1379 57.15);
-  --accent-foreground: oklch(99.11% 0 0);
-  --background: oklch(12% 0.0011 57.15);
-  --border: oklch(28% 0.0011 57.15);
-  --danger: oklch(59.4% 0.1971 1.03);
-  --danger-foreground: oklch(99.11% 0 0);
-  --default: #282727;
-  --default-foreground: oklch(99.11% 0 0);
-  --field-background: oklch(21.03% 0.0022 57.15);
-  --field-foreground: oklch(99.11% 0.0011 57.15);
-  --field-placeholder: oklch(70.5% 0.0022 57.15);
-  --focus: #b46004;
-  --foreground: oklch(99.11% 0.0011 57.15);
-  --muted: oklch(70.5% 0.0022 57.15);
-  --overlay: oklch(21.03% 0.0022 57.15);
-  --overlay-foreground: oklch(99.11% 0.0011 57.15);
-  --scrollbar: oklch(70.5% 0.0011 57.15);
-  --segment: oklch(39.64% 0.0011 57.15);
-  --segment-foreground: oklch(99.11% 0.0011 57.15);
-  --separator: oklch(25% 0.0011 57.15);
-  --success: oklch(73.29% 0.1939 127.21);
-  --success-foreground: oklch(21.03% 0.0059 127.21);
-  --surface: oklch(21.03% 0.0022 57.15);
-  --surface-foreground: oklch(99.11% 0.0011 57.15);
-  --surface-secondary: oklch(25.7% 0.0016 57.15);
-  --surface-secondary-foreground: oklch(99.11% 0.0011 57.15);
-  --surface-tertiary: oklch(27.21% 0.0016 57.15);
-  --surface-tertiary-foreground: oklch(99.11% 0.0011 57.15);
-  --warning: oklch(82.03% 0.1391 52.74);
-  --warning-foreground: oklch(21.03% 0.0059 52.74);
-  --command: oklch(56.106% 0.12114 245.967);
+  /* Theme 03 Brand Anchors & Functional Tokens (Dark Mode - Default) */
+  --accent: #D63825;
+  --accent-foreground: #FFFFFF;
+  --accent-hover: #C03826;
+  --background: #091512;
+  --border: rgba(247, 247, 242, 0.08);
+  --danger: #D96E80;
+  --danger-foreground: #FFFFFF;
+  --default: #243E33;
+  --default-foreground: #F7F7F2;
+  --field-background: #15271F;
+  --field-foreground: #F7F7F2;
+  --field-placeholder: #A9B8AF;
+  --focus: #9CAF88;
+  --foreground: #F7F7F2;
+  --muted: #A9B8AF;
+  --overlay: #15271F;
+  --overlay-foreground: #F7F7F2;
+  --scrollbar: rgba(156, 175, 136, 0.45);
+  --segment: #243E33;
+  --segment-foreground: #F7F7F2;
+  --separator: rgba(247, 247, 242, 0.08);
+  --success: #66AA8C;
+  --success-foreground: #102D25;
+  --surface: #15271F;
+  --surface-foreground: #F7F7F2;
+  --surface-secondary: #243E33;
+  --surface-secondary-foreground: #F7F7F2;
+  --surface-tertiary: #264235;
+  --surface-tertiary-foreground: #F7F7F2;
+  --warning: #CC9C55;
+  --warning-foreground: #102D25;
+  --command: #9CAF88;
+  /* Border Radius */
+  --radius: 0.5rem;
+  --field-radius: 0.75rem;
 }
+
+.light,
+[data-theme="light"] {
+  color-scheme: light;
+  --font-sans: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Theme 03 Brand Anchors & Functional Tokens (Light Mode) */
+  --accent: #D63825;
+  --accent-foreground: #FFFFFF;
+  --accent-hover: #C03826;
+  --background: #F7F5EF;
+  --border: rgba(16, 45, 37, 0.12);
+  --danger: #CB3851;
+  --danger-foreground: #FFFFFF;
+  --default: #EFF2EC;
+  --default-foreground: #111A17;
+  --field-background: #FFFFFF;
+  --field-foreground: #111A17;
+  --field-placeholder: #53635A;
+  --focus: #102D25;
+  --foreground: #111A17;
+  --muted: #53635A;
+  --overlay: #FFFFFF;
+  --overlay-foreground: #111A17;
+  --scrollbar: rgba(16, 45, 37, 0.45);
+  --segment: #EFF2EC;
+  --segment-foreground: #111A17;
+  --separator: rgba(16, 45, 37, 0.12);
+  --success: #2E8A62;
+  --success-foreground: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-foreground: #111A17;
+  --surface-secondary: #EFF2EC;
+  --surface-secondary-foreground: #111A17;
+  --surface-tertiary: #48654C;
+  --surface-tertiary-foreground: #F7F5EF;
+  --warning: #B97816;
+  --warning-foreground: #FFFFFF;
+  --command: #102D25;
+  /* Border Radius */
+  --radius: 0.5rem;
+  --field-radius: 0.75rem;
+}
+
 @theme {
   --color-command: var(--command);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-hover: var(--accent-hover);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-tertiary: var(--surface-tertiary);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-border: var(--border);
+  --color-focus: var(--focus);
+  --color-scrollbar: var(--scrollbar);
+  --color-field-background: var(--field-background);
+  --color-field-foreground: var(--field-foreground);
+  --color-field-placeholder: var(--field-placeholder);
   --font-sans: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
@@ -103,7 +127,7 @@
   animation: cursor-expand 1.2s ease-in-out infinite;
   height: calc(var(--text-sm) + 6px);
   width: 2px;
-  background-color: var(--accent);
+  background-color: var(--command);
   transform-origin: center;
   border-radius: 2px;
 }
@@ -128,7 +152,7 @@ body,
 /* Custom Sleek Terminal Scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(180, 96, 4, 0.55) transparent;
+  scrollbar-color: var(--scrollbar) transparent;
 }
 
 ::-webkit-scrollbar,
@@ -151,14 +175,14 @@ body,
 
 ::-webkit-scrollbar-thumb,
 *::-webkit-scrollbar-thumb {
-  background: rgba(180, 96, 4, 0.45) !important;
+  background: var(--scrollbar) !important;
   border-radius: 9999px !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 ::-webkit-scrollbar-thumb:hover,
 *::-webkit-scrollbar-thumb:hover {
-  background: #b46004 !important;
+  background: var(--command) !important;
 }
 
 ::-webkit-scrollbar-corner,
@@ -168,7 +192,7 @@ body,
 
 .terminal-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(180, 96, 4, 0.55) transparent;
+  scrollbar-color: var(--scrollbar) transparent;
 }
 
 .terminal-scrollbar::-webkit-scrollbar {
@@ -181,13 +205,13 @@ body,
 }
 
 .terminal-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(180, 96, 4, 0.45) !important;
+  background: var(--scrollbar) !important;
   border-radius: 9999px !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 .terminal-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #b46004 !important;
+  background: var(--command) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

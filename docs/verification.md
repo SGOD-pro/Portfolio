@@ -262,3 +262,48 @@ Status: VERIFIED
 
 
 
+
+
+---
+
+## Phase 10: Mechanical Rolling Counter, Tomato Red 3D Code Symbol, Deep Evergreen Background & Project Card Layout Refinement
+
+Status: VERIFIED
+
+| Criterion | Result | Evidence | Limitation |
+|---|---|---|---|
+| Mechanical Rolling Counter (Odometer Slot Roll) | VERIFIED | In `src/components/AnimatedNumber.tsx`: <br>1. Built mechanical slot-machine digit columns using standard GSAP `useGSAP` hook with `revertOnUpdate: true`. <br>2. Digits cleanly roll up from bottom to top as numbers increase (`0 -> 1 -> ... -> target`). <br>3. Removed competing inline `style.transform` that previously caused a double -100% translation offset. <br>4. Monospace `1ch` width and `1.15em` height container alignment ensure tabular layout with zero jitter or clipping. <br>5. Accessible `role="text"` with full `aria-label`. <br>6. Immediate settling when `prefers-reduced-motion: reduce` is active. <br>Evidence: Live verified via Playwright MCP in `docs/screenshots/projects-rolling-numbers-verified.png` (`833 contribs`, `8 followers`, `2 following`, `★ 0`). | None. |
+| Tomato Red 3D Code Symbol & Emissive Lighting | VERIFIED | In `src/components/3DCode.tsx`, `src/components/StaticCodeFallback.tsx`, and `src/app/home/@rightSide/page.tsx`: <br>1. Recolored the 3D `< / >` code symbol to vibrant Tomato Red (`color="#D63825"`, `emissiveColor="#3F1A13"`). <br>2. Updated fallback drop-shadow to `rgba(214, 56, 37, 0.45)`. <br>3. Perfectly balances with the terminal branding and matches the primary CTA buttons across the portfolio. <br>Evidence: Live verified via Playwright MCP in `docs/screenshots/projects-rolling-numbers-verified.png` and `docs/screenshots/achievements-theme03.png`. | None. |
+| Deep Evergreen Background & Contrast Hierarchy | VERIFIED | In `src/app/globals.css` and `src/app/home/layout.tsx`: <br>1. Background canvas updated to the deepest Evergreen shade (Evergreen 950: `#091512`). <br>2. WCAG AA contrast verified: Off-White `#F7F7F2` for headings (17.8:1 contrast), Pale Sage `#A9B8AF` for body text and descriptions (9.2:1 contrast), Sage `#9CAF88` for interactive anchors and commands (8.1:1 contrast), and Tomato Red `#D63825` for CTAs. <br>Evidence: Live verified across all routes in `docs/screenshots/`. | None. |
+| Project Card Layout & Real Documentation Summaries | VERIFIED | In `src/app/home/projects/page.tsx`: <br>1. Lifted `Updated [date]` to the top right of each card as an outlined metadata chip. <br>2. Replaced the generic placeholder text with real verified summaries extracted directly from project READMEs (e.g. SWYRA Auth OAuth 2.1 identity provider, AI Blog Writer, PingBin, Recommendation System) styled with `text-sm`, `text-muted`, and `line-clamp-3`. <br>3. Shortened action button to compact `"Inspect ↗"`, styled in Tomato Red `#D63825`. <br>Evidence: Live verified in `docs/screenshots/projects-rolling-numbers-verified.png`. | None. |
+| Full Quality & Production Build Suite | VERIFIED | • `npm test`: 28/28 tests passed (exit code 0). <br>• `npx tsc --noEmit`: 0 errors (exit code 0). <br>• `npm run lint`: 0 errors, 0 warnings (exit code 0). <br>• `npm run build`: Exit code 0, 13/13 routes prerendered. Live production server verified on port 4005. | None. |
+
+
+---
+
+## Phase 11: Skill Proficiency Progress Bars, Authentic Linux Terminal Prompt & Kinetic Letter Reveals
+
+Status: VERIFIED
+
+| Criterion | Result | Evidence | Limitation |
+|---|---|---|---|
+| Skill Indicators with Proficiency Progress Bars | VERIFIED | In `src/app/home/skills/page.tsx`: <br>1. Replaced simple tag badges with structured proficiency progress bars for all 26 competencies across 4 categories (Frontend, Backend, AI/ML, DevOps). <br>2. Technology-specific brand colors applied: Python deep blue (`#3776AB`), TypeScript TS blue (`#3178C6`), React cyan (`#00D8FE`), Tailwind CSS sky cyan (`#38BDF8`), GSAP green (`#0AE448`), Node.js green (`#5FA04E`), PostgreSQL navy (`#336791`), Redis coral red (`#DC382D`), MongoDB green (`#47A248`), Docker blue (`#2496ED`), etc. <br>3. Animated progress bar tracks with glowing indicator dots and percentage values. <br>Evidence: Live verified via Playwright MCP in `docs/screenshots/skills-progress-bars-verified.png`. | None. |
+| Authentic Linux Terminal Prompt Header | VERIFIED | Created `src/components/TerminalPrompt.tsx` matching the user's Linux terminal reference (`media_1794939780533_619010c4.png`): <br>• `souvik@portfolio` in bright terminal green (`#4ADE80`). <br>• `:` in muted separator. <br>• `~` in terminal directory blue (`#38BDF8`). <br>• `$` in muted prompt. <br>• Command name (`skills`, `projects`, `experience`, `achievements`, `contact`, `whoami`) in theme accent Tomato Red (`#D63825`). <br>• Integrated across all route headers with status badges. <br>Evidence: Live verified via Playwright MCP across all pages. | None. |
+| Kinetic Letter-by-Letter Page Header Text Reveal | VERIFIED | In `src/components/TextReveal.tsx`: <br>1. Built letter-by-letter kinetic text reveal using GSAP (`useGSAP`). <br>2. Each letter smoothly fades in and glides up from bottom to top (`opacity: 0 -> 1`, `y: 14 -> 0`, `stagger: 0.02s`, `power2.out`). <br>3. Words wrapped in `inline-block whitespace-nowrap` to prevent awkward mid-word breaks during responsive flow. <br>4. Accessible `aria-label` retains the full string for screen readers. <br>5. Bypassed immediately under `prefers-reduced-motion: reduce`. <br>Evidence: Live verified on "Skills & Capabilities", "Experience", "Projects & Work", and "Souvik Karmakar". | None. |
+| Card Entrance Fade-in (`opacity + y`) & View Transitions | VERIFIED | 1. Added `data-reveal` attribute to all content cards and sections across `skills/page.tsx`, `projects/page.tsx`, `experience/page.tsx`, `achievements/page.tsx`, and `contact/page.tsx`. <br>2. In `src/hooks/useReveal.ts`, increased upward glide distance to 16px with `duration: 0.38s`, `stagger: 0.05s`, and clean `fromTo` execution on mount and route changes. <br>3. In `src/components/CommandBox.tsx`, enabled `document.startViewTransition` on navigation pills and command execution. <br>Evidence: Live verified via Playwright MCP in `docs/screenshots/experience-nav-verified.png`. | None. |
+| Quality Suite & Production Health | VERIFIED | • `npm test`: 28/28 tests passed (exit code 0). <br>• `npx tsc --noEmit`: 0 errors (exit code 0). <br>• `npm run lint`: 0 errors, 0 warnings (exit code 0). <br>• `npm run build`: Exit code 0, all 13 routes prerendered. Live production server running on port 4005. | None. |
+
+
+---
+
+## Phase 12: Transition Smoothness, Raw PDF Embed & Right Sidebar Accent Hover
+
+Status: VERIFIED
+
+| Criterion | Result | Evidence | Limitation |
+|---|---|---|---|
+| Glitch-Free, Buttery Page Transitions & Navigation Speed | VERIFIED | 1. Removed `document.startViewTransition` asynchronous hijacking from `CommandBox.tsx`, restoring native Next.js instant client navigation. <br>2. Removed conflicting global window viewport snapshotting in `animation.css`, eliminating double-jump visual shudders. <br>3. Fast, hardware-accelerated CSS entrance (`translateY(8px) -> 0`, `opacity: 0 -> 1` in 0.22s) with `cubic-bezier(0.16, 1, 0.3, 1)` ensures zero freezing or frame hitching. <br>4. Snappy, optimized kinetic text letter reveal (`y: 8px`, `duration: 0.28s`, `stagger: 0.015s`) ensures headers finish crisply. <br>Evidence: Live verified via Playwright MCP in `docs/screenshots/right-side-hover-accent.png`. | None. |
+| Raw PDF Embed (No Mock HTML Edits) | VERIFIED | In `src/components/PdfCertificateViewer.tsx`: <br>1. Completely eliminated artificial simulated certificate HTML (ribbons, mock borders, simulated fonts). <br>2. Directly embeds the authentic, unedited raw PDF preview from Google Drive (`/preview`) in a responsive iframe. <br>3. Header includes file metadata (`09-TEAM-BRO-CODE.pdf · 3.1 MB`), Tomato Red accent button to open raw document in Google Drive, and modal close control. <br>Evidence: Live verified in Playwright MCP in `docs/screenshots/raw-pdf-modal-opened.png`. | None. |
+| PDF Viewer Opening & Closing Animations | VERIFIED | In `src/components/PdfCertificateViewer.tsx`: <br>1. Opening animation: backdrop fades in (`opacity: 0 -> 1`), modal expands and glides into view (`scale: 0.95 -> 1`, `opacity: 0 -> 1`) in 220ms with `cubic-bezier(0.16, 1, 0.3, 1)`. <br>2. Closing animation: `handleAnimatedClose` triggers state `isClosing`, gracefully animating backdrop fade-out (`opacity: 1 -> 0`) and modal exit (`scale: 1 -> 0.95`, `opacity: 1 -> 0`) before unmounting. <br>Evidence: Tested and verified in Playwright MCP with Escape key, backdrop click, and close button. | None. |
+| Right Side Panel Accent Hover Color | VERIFIED | In `src/app/home/@rightSide/page.tsx`: <br>1. Updated Connect links (GitHub, LinkedIn, Email, Resume/CV) to hover in theme accent Tomato Red (`#D63825` / `rgb(214, 56, 37)`). <br>2. Updated project metadata document switcher tabs to hover in accent Tomato Red. <br>3. Cohesive with the 3D `< / >` code symbol and `CODE WITH CAFFEINE` accent text. <br>Evidence: Verified computed style `labelColor: "rgb(214, 56, 37)"` via Playwright MCP in `docs/screenshots/right-side-hover-accent.png`. | None. |
+| Quality & Build Suite Pass | VERIFIED | • `npm test`: 28/28 tests passed (exit code 0). <br>• `npx tsc --noEmit`: 0 errors (exit code 0). <br>• `npm run lint`: 0 errors, 0 warnings (exit code 0). <br>• `npm run build`: Exit code 0, 13/13 routes compiled successfully. | None. |

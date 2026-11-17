@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { useReveal } from "@/hooks/useReveal";
 import TextReveal from "@/components/TextReveal";
+import TerminalPrompt from "@/components/TerminalPrompt";
 
 const focusAreas = [
   {
@@ -36,10 +37,7 @@ function Experience() {
   return (
     <div ref={containerRef} className="relative flex flex-col grow">
       {/* Linux prompt at top left */}
-      <div className="my-1.5 flex items-center gap-2 text-xs font-mono" data-reveal>
-        <span className="text-field-placeholder font-bold">souvik@portfolio:~$</span>
-        <span className="text-command">experience</span>
-      </div>
+      <TerminalPrompt command="experience" />
 
       <header className="mt-2 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -64,9 +62,10 @@ function Experience() {
         {focusAreas.map((area) => (
           <section
             key={area.title}
-            className="rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.05] min-w-0"
+            data-reveal
+            className="rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all duration-150 hover:border-command/40 hover:bg-surface min-w-0"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-border">
               <h2 className="text-lg sm:text-xl font-sans font-semibold text-foreground">
                 {area.title}
               </h2>
@@ -81,7 +80,7 @@ function Experience() {
               {area.highlights.map((item) => (
                 <li
                   key={item}
-                  className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-mono text-accent/90"
+                  className="rounded-md border border-border bg-surface-secondary/50 px-2.5 py-1 text-xs font-mono text-command"
                 >
                   {item}
                 </li>
@@ -91,11 +90,11 @@ function Experience() {
         ))}
       </div>
 
-      <footer data-reveal className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10 text-xs font-sans text-muted">
+      <footer data-reveal className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border text-xs font-sans text-muted">
         <span>Looking to discuss fullstack or applied AI opportunities?</span>
         <Link
           href="/home/contact"
-          className="text-accent font-mono hover:underline inline-flex items-center gap-1"
+          className="text-command font-mono hover:underline inline-flex items-center gap-1"
         >
           Get in touch →
         </Link>

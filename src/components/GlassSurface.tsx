@@ -27,6 +27,8 @@ export interface GlassSurfaceProps extends React.HTMLAttributes<HTMLDivElement> 
   reflection?: number;
   distortion?: number;
   bevel?: number;
+  /** Refraction band in CSS pixels. Omit to derive it from radius and thickness. */
+  bevelWidth?: number;
   dispersion?: number;
   frost?: number;
   shine?: number;
@@ -49,37 +51,37 @@ void main() {
 }
 `;
 
-// Fixed rounded glass volume with liquid bevel refraction.
-// Center is crystal clear and undistorted; refraction and chromatic dispersion occur along the bevel edge.
+// Static, analytic WebGL meniscus. No SVG, time uniform or pointer deformation.
 const FRAGMENT = `#version 300 es
 precision highp float;
 in vec2 uv;
 uniform sampler2D textureImage;
 uniform vec2 size, sourceOrigin, sourceSize;
-uniform float radius, aa, refractAmount, distortion, bevel, dispersion;
+uniform float radius, aa, refractAmount, distortion, bevel, bevelWidth, dispersion;
 uniform float thickness, reflection;
 uniform float frost, shine, angle, borderWidth, borderOpacity, hasSource, clipToSource;
 uniform vec4 surfaceTint;
 out vec4 fragColor;
 
-// Signed distance function for rounded rectangle
 float outline(vec2 p) {
   vec2 q = abs(p) - (size * 0.5 - vec2(radius));
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
 }
 
-// 2D surface normal from the signed distance field gradient
-vec2 surfaceNormal2D(vec2 p) {
-  float h = 0.5;
-  return normalize(vec2(
-    outline(p + vec2(h, 0.0)) - outline(p - vec2(h, 0.0)),
-    outline(p + vec2(0.0, h)) - outline(p - vec2(0.0, h))
-  ));
+vec2 outward(vec2 p) {
+  vec2 g = vec2(
+    outline(p + vec2(0.5, 0.0)) - outline(p - vec2(0.5, 0.0)),
+    outline(p + vec2(0.0, 0.5)) - outline(p - vec2(0.0, 0.5))
+  );
+  // A flat center and the SDF's medial axes can have a zero gradient.
+  // Never normalize zero: NaN * zero is still NaN in the clear region.
+  return g / max(length(g), 0.0001);
 }
 
 vec4 sampleScene(vec2 point) {
   vec2 st = (point - sourceOrigin) / sourceSize;
   if (clipToSource > 0.5 && (st.x < 0.0 || st.y < 0.0 || st.x > 1.0 || st.y > 1.0)) return vec4(0.0);
+  // Uploads use UNPACK_FLIP_Y_WEBGL. DOM coordinates increase downwards.
   return texture(textureImage, vec2(clamp(st.x, 0.0, 1.0), 1.0 - clamp(st.y, 0.0, 1.0)));
 }
 
@@ -90,77 +92,64 @@ void main() {
   float mask = 1.0 - smoothstep(-aa, aa, d);
   if (mask < 0.001) { fragColor = vec4(0.0); return; }
 
-  // Distance inside from the perimeter (0 at boundary, increases inwards)
-  float inside = max(0.0, -d);
+  float inside = max(-d, 0.0);
+  float automaticWidth = max(12.0, radius * (0.8 + bevel) + thickness * bevel);
+  float reach = min(bevelWidth > 0.0 ? bevelWidth : automaticWidth, min(size.x, size.y) * 0.48);
+  float u = clamp(inside / max(reach, 0.5), 0.0, 1.0);
+  float edge = 1.0 - u;
+  vec2 normal2 = outward(p);
 
-  // Bevel zone: liquid refraction occurs strictly within the curved bevel edge
-  float bevelZone = max(bevel * thickness * 2.5, 4.0);
-  float t = 1.0 - clamp(inside / bevelZone, 0.0, 1.0); // 1.0 at outer edge, 0.0 in interior
+  // A rounded meniscus, not a narrow power-function border. Its slope
+  // settles smoothly to a flat, completely undistorted central face.
+  float slope = sqrt(max(0.0, 1.0 - u * u));
+  vec3 normal3 = normalize(vec3(normal2 * slope, max(u, 0.001)));
+  float ior = 1.0 + refractAmount * 0.65;
+  vec3 ray = refract(vec3(0.0, 0.0, -1.0), normal3, 1.0 / ior);
+  vec2 bend = ray.xy / max(-ray.z, 0.2) * thickness * (0.75 + refractAmount * 0.5);
+  // Bound sampling to one local bevel: no multiple folds or stretched panes.
+  bend *= min(1.0, reach * 0.85 / max(length(bend), 0.0001));
 
-  // Liquid curvature profile: smooth meniscus curve along the rounded bevel edge
-  float profile = pow(t, 2.2);
+  // Optional static lens curvature. Zero never warps the reading region.
+  vec2 lens = p / max(size * 0.5, vec2(1.0));
+  bend -= lens * distortion * thickness * refractAmount * (1.0 - edge);
+  vec2 samplePoint = point + bend;
 
-  // Edge normal pointing outward from boundary
-  vec2 n2D = surfaceNormal2D(p);
+  // shineAngle is clockwise from the top, in DOM coordinates.
+  vec2 light = vec2(sin(angle), -cos(angle));
+  float facing = dot(normal2, light);
+  float directional = 0.18 + 0.82 * pow(abs(facing), 4.0);
+  float fresnel = pow(1.0 - clamp(normal3.z, 0.0, 1.0), 5.0);
+  float edgeLight = (pow(edge, 5.0) * directional * 0.32 + fresnel * 0.12) * shine * reflection;
+  float border = borderWidth > 0.0 ? (1.0 - smoothstep(borderWidth, borderWidth + aa, inside)) * borderOpacity : 0.0;
+  float highlight = clamp(edgeLight + border, 0.0, 0.65);
 
-  // Liquid refraction displacement:
-  // At inside >= bevelZone (central reading area): t == 0, bend == 0 (zero distortion, crystal clear!)
-  float bendScale = refractAmount * thickness * 0.75;
-  vec2 bend = n2D * (profile * bendScale);
-
-  // Light angle and specular rim highlight along the liquid edge
-  vec2 lightDir = vec2(cos(angle), sin(angle));
-  float nDotL = clamp(dot(n2D, lightDir), 0.0, 1.0);
-  float rim = pow(t, 2.0) * (0.3 + 0.7 * nDotL) * shine * reflection;
-
-  // Thin, crisp border stroke
-  float border = 0.0;
-  if (borderWidth > 0.0) {
-    border = (1.0 - smoothstep(0.0, borderWidth + aa, inside)) * borderOpacity;
-  }
-  float edgeHighlight = clamp(rim + border, 0.0, 0.95);
-
+  vec4 color = vec4(0.0);
   if (hasSource > 0.5) {
-    vec4 color;
-    if (t > 0.001 && dispersion > 0.001 && refractAmount > 0.001) {
-      // Chromatic dispersion strictly on the liquid bevel
-      float disp = dispersion * 18.0 * profile;
-      vec2 redPt = point - (bend + n2D * disp);
-      vec2 greenPt = point - bend;
-      vec2 bluePt = point - (bend - n2D * disp);
-
-      color.r = sampleScene(redPt).r;
-      color.g = sampleScene(greenPt).g;
-      color.b = sampleScene(bluePt).b;
-      color.a = sampleScene(greenPt).a;
-    } else {
-      // Crystal clear undistorted sampling in the central reading area!
-      color = sampleScene(point - bend);
+    color = sampleScene(samplePoint);
+    if (edge > 0.0 && dispersion > 0.001 && refractAmount > 0.001) {
+      vec2 split = normal2 * dispersion * thickness * 0.35 * slope;
+      color.r = sampleScene(samplePoint + split).r;
+      color.b = sampleScene(samplePoint - split).b;
     }
-
-    // Apply frost blur only if frost is configured and only on the edge
-    if (frost > 0.001 && t > 0.0) {
-      float r = frost * 4.0 * profile;
-      vec4 blurColor = (
-        sampleScene(point - bend + vec2(r, 0.0)) +
-        sampleScene(point - bend - vec2(r, 0.0)) +
-        sampleScene(point - bend + vec2(0.0, r)) +
-        sampleScene(point - bend - vec2(0.0, r))
-      ) * 0.25;
-      color = mix(color, blurColor, frost * 0.5);
+    float blurRadius = frost * 6.0 * slope;
+    if (blurRadius > 0.15) {
+      vec4 blurred = (sampleScene(samplePoint + vec2(blurRadius, 0.0)) +
+                      sampleScene(samplePoint - vec2(blurRadius, 0.0)) +
+                      sampleScene(samplePoint + vec2(0.0, blurRadius)) +
+                      sampleScene(samplePoint - vec2(0.0, blurRadius))) * 0.25;
+      color = mix(color, blurred, min(frost, 0.85));
     }
-
-    // Apply surface tint (subtle glass tint, e.g. 1% white or amber)
-    color.rgb = mix(color.rgb, surfaceTint.rgb, surfaceTint.a);
-
-    // Composite edge specular highlight over the refracted color
-    vec3 premultiplied = color.rgb * color.a * (1.0 - edgeHighlight) + vec3(1.0) * edgeHighlight;
-    float alpha = color.a + edgeHighlight * (1.0 - color.a);
-    fragColor = vec4(premultiplied / max(alpha, 0.0001), alpha * mask);
-  } else {
-    // Honest fallback surface lighting when no texture is available
-    fragColor = vec4(vec3(1.0), edgeHighlight * mask);
+    // Restrained absorption adds depth without drawing an opaque white rim.
+    color.rgb *= 1.0 - reflection * 0.075 * pow(edge, 3.0);
   }
+
+  // Tint must also work when a source contains transparent pixels.
+  float tintAlpha = surfaceTint.a;
+  float alpha = color.a + tintAlpha * (1.0 - color.a);
+  vec3 premul = color.rgb * color.a * (1.0 - tintAlpha) + surfaceTint.rgb * tintAlpha;
+  premul = premul * (1.0 - highlight) + vec3(highlight);
+  alpha = alpha + highlight * (1.0 - alpha);
+  fragColor = vec4(premul / max(alpha, 0.0001), alpha * mask);
 }
 `;
 
@@ -204,19 +193,20 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       backdropRef,
       backdropFit = "cover",
       live = false,
-      refraction = 0.55,
-      thickness = 10,
-      reflection = 0.42,
-      distortion = 0.02,
-      bevel = 0.3,
+      refraction = 0.85,
+      thickness = 20,
+      reflection = 0.8,
+      distortion = 0,
+      bevel = 0.5,
+      bevelWidth,
       dispersion = 0.02,
-      frost = 0.01,
-      shine = 0.35,
+      frost = 0,
+      shine = 0.65,
       shineAngle = 315,
       tint = "#ffffff",
       tintOpacity = 0.01,
-      borderWidth = 1,
-      borderOpacity = 0.12,
+      borderWidth = 0.6,
+      borderOpacity = 0.09,
       maxDpr = 1.5,
       onEffectError,
       ...rest
@@ -232,6 +222,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       reflection,
       distortion,
       bevel,
+      bevelWidth,
       dispersion,
       frost,
       shine,
@@ -270,6 +261,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
         reflection,
         distortion,
         bevel,
+        bevelWidth,
         dispersion,
         frost,
         shine,
@@ -290,6 +282,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       reflection,
       distortion,
       bevel,
+      bevelWidth,
       dispersion,
       frost,
       shine,
@@ -325,9 +318,9 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       });
       if (!gl) {
         setStatus("fallback");
-        refs.current.onEffectError?.(
-          new Error("WebGL 2 is unavailable; using the CSS material fallback."),
-        );
+        const error = new Error("WebGL 2 is unavailable; using the CSS material fallback.");
+        if (refs.current.onEffectError) refs.current.onEffectError(error);
+        else console.warn("[GlassSurface]", error.message);
         return;
       }
       let program: WebGLProgram | null = null;
@@ -336,19 +329,25 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       let source: Exclude<GlassBackdrop, string> | null = null;
       let disposed = false,
         lost = false,
+        failed = false,
         visible = true,
         frame = 0,
         needsUpload = false;
+      let uploadedWidth = 0,
+        uploadedHeight = 0;
       let shaders: WebGLShader[] = [];
       let cancelLoad = () => {};
       const uniforms: Record<string, WebGLUniformLocation | null> = {};
       const fail = (reason: unknown) => {
-        if (disposed) return;
+        if (disposed || failed) return;
+        failed = true;
+        cancelAnimationFrame(frame);
+        frame = 0;
         setTextured(false);
         setStatus("fallback");
-        refs.current.onEffectError?.(
-          reason instanceof Error ? reason : new Error(String(reason)),
-        );
+        const error = reason instanceof Error ? reason : new Error(String(reason));
+        if (refs.current.onEffectError) refs.current.onEffectError(error);
+        else console.warn("[GlassSurface]", error.message);
       };
       function release() {
         if (program) gl!.deleteProgram(program);
@@ -382,7 +381,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       }
       function draw() {
         frame = 0;
-        if (disposed || lost || !program || !visible || document.hidden) return;
+        if (disposed || lost || failed || !program || !visible || document.hidden) return;
         try {
           const o = options.current;
           const rect = element!.getBoundingClientRect();
@@ -412,14 +411,13 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
             (needsUpload || (o.live && !(source instanceof HTMLImageElement)))
           ) {
             gl!.pixelStorei(gl!.UNPACK_FLIP_Y_WEBGL, true);
-            gl!.texImage2D(
-              gl!.TEXTURE_2D,
-              0,
-              gl!.RGBA,
-              gl!.RGBA,
-              gl!.UNSIGNED_BYTE,
-              source!,
-            );
+            if (sw === uploadedWidth && sh === uploadedHeight) {
+              gl!.texSubImage2D(gl!.TEXTURE_2D, 0, 0, 0, gl!.RGBA, gl!.UNSIGNED_BYTE, source!);
+            } else {
+              gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA, gl!.RGBA, gl!.UNSIGNED_BYTE, source!);
+              uploadedWidth = sw;
+              uploadedHeight = sh;
+            }
             if (gl!.getError() !== gl!.NO_ERROR)
               throw new Error("Glass texture upload failed.");
             needsUpload = false;
@@ -464,6 +462,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
           f("reflection", limit(o.reflection, 0, 2));
           f("distortion", limit(o.distortion, 0, 1));
           f("bevel", limit(o.bevel, 0, 1));
+          f("bevelWidth", o.bevelWidth === undefined ? 0 : limit(o.bevelWidth, 0.5, 200));
           f("dispersion", limit(o.dispersion, 0, 1));
           f("frost", limit(o.frost, 0, 1));
           f("shine", limit(o.shine, 0, 1));
@@ -495,13 +494,16 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
         }
       }
       function requestDraw() {
-        if (!frame && !disposed && !lost && visible && !document.hidden)
+        if (!frame && !disposed && !lost && !failed && visible && !document.hidden)
           frame = requestAnimationFrame(draw);
       }
       function initialize() {
         try {
           lost = false;
+          failed = false;
           release();
+          uploadedWidth = 0;
+          uploadedHeight = 0;
           program = gl!.createProgram();
           if (!program) throw new Error("Cannot allocate the glass program.");
           gl!.attachShader(program, compile(gl!.VERTEX_SHADER, VERTEX));
@@ -557,6 +559,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
             "reflection",
             "distortion",
             "bevel",
+            "bevelWidth",
             "dispersion",
             "frost",
             "shine",
@@ -729,7 +732,6 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
             pointerEvents: "none",
             borderRadius: "inherit",
             boxShadow: `inset 0 0 0 ${effectOn && status === "webgl" ? 0 : limit(borderWidth, 0, 4)}px rgba(255,255,255,${limit(borderOpacity, 0, 1)})`,
-            
           }}
         />
         {children}
@@ -739,3 +741,4 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
 );
 
 export default GlassSurface;
+

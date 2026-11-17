@@ -30,17 +30,17 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
           theme: "dark",
           themeVariables: {
             darkMode: true,
-            background: "#0d0d0d",
-            primaryColor: "#b46004",
-            primaryTextColor: "#f5f5f5",
-            primaryBorderColor: "#d97706",
-            lineColor: "#f59e0b",
-            secondaryColor: "#1a1a1a",
-            tertiaryColor: "#141414",
-            mainBkg: "#141414",
-            nodeBorder: "#b46004",
-            clusterBkg: "#0a0a0a",
-            clusterBorder: "#333333",
+            background: "#0D1915",
+            primaryColor: "#243E33",
+            primaryTextColor: "#F7F7F2",
+            primaryBorderColor: "#9CAF88",
+            lineColor: "#9CAF88",
+            secondaryColor: "#15271F",
+            tertiaryColor: "#264235",
+            mainBkg: "#15271F",
+            nodeBorder: "#9CAF88",
+            clusterBkg: "#0D1915",
+            clusterBorder: "rgba(247, 247, 242, 0.15)",
             fontSize: "12px",
             fontFamily: "var(--font-mono, monospace)",
           },
@@ -122,12 +122,12 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
   }, []);
 
   return (
-    <div className="my-4 rounded-xl border border-white/15 bg-black/60 backdrop-blur-md overflow-hidden font-mono text-xs shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+    <div className="my-4 rounded-xl border border-border bg-surface/80 backdrop-blur-md overflow-hidden font-mono text-xs shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
       {/* Control Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-white/10 bg-white/[0.03] text-[10px]">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-border bg-surface-secondary/40 text-[10px]">
         <div className="flex items-center gap-2">
-          <span className="uppercase tracking-wider font-semibold text-accent flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          <span className="uppercase tracking-wider font-semibold text-command flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-command" />
             MERMAID ARCHITECTURE DIAGRAM
           </span>
           {error && (
@@ -140,13 +140,13 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
         {/* View mode toggle & diagram controls */}
         <div className="flex items-center gap-1.5">
           {!error && (
-            <div className="flex items-center rounded border border-white/10 bg-black/40 p-0.5 mr-1">
+            <div className="flex items-center rounded border border-border bg-background/60 p-0.5 mr-1">
               <button
                 type="button"
                 onClick={() => setViewMode("diagram")}
                 className={`px-2 py-0.5 rounded text-[9px] transition cursor-pointer ${
                   viewMode === "diagram"
-                    ? "bg-accent/20 text-accent font-semibold"
+                    ? "bg-command/20 text-command font-semibold"
                     : "text-muted hover:text-foreground"
                 }`}
               >
@@ -157,7 +157,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
                 onClick={() => setViewMode("code")}
                 className={`px-2 py-0.5 rounded text-[9px] transition cursor-pointer ${
                   viewMode === "code"
-                    ? "bg-accent/20 text-accent font-semibold"
+                    ? "bg-command/20 text-command font-semibold"
                     : "text-muted hover:text-foreground"
                 }`}
               >
@@ -167,12 +167,12 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
           )}
 
           {viewMode === "diagram" && svgHtml && !error && (
-            <div className="flex items-center gap-1 border-r border-white/10 pr-2 mr-1">
+            <div className="flex items-center gap-1 border-r border-border pr-2 mr-1">
               <button
                 type="button"
                 onClick={handleZoomOut}
                 title="Zoom out"
-                className="px-1.5 py-0.5 rounded border border-white/10 hover:border-white/20 text-muted hover:text-foreground transition cursor-pointer"
+                className="px-1.5 py-0.5 rounded border border-border hover:border-command/40 text-muted hover:text-foreground transition cursor-pointer"
               >
                 -
               </button>
@@ -180,7 +180,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
                 type="button"
                 onClick={handleReset}
                 title="Reset zoom & pan (up to 500%)"
-                className="px-2 py-0.5 rounded border border-white/10 hover:border-white/20 text-accent hover:text-foreground transition text-[10px] font-semibold cursor-pointer"
+                className="px-2 py-0.5 rounded border border-border hover:border-command/40 text-command hover:text-foreground transition text-[10px] font-semibold cursor-pointer"
               >
                 {Math.round(zoom * 100)}%
               </button>
@@ -188,7 +188,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
                 type="button"
                 onClick={handleZoomIn}
                 title="Zoom in (limit: 500%)"
-                className="px-1.5 py-0.5 rounded border border-white/10 hover:border-white/20 text-muted hover:text-foreground transition cursor-pointer"
+                className="px-1.5 py-0.5 rounded border border-border hover:border-command/40 text-muted hover:text-foreground transition cursor-pointer"
               >
                 +
               </button>
@@ -196,7 +196,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
                 type="button"
                 onClick={handleReset}
                 title="Reset position and zoom"
-                className="px-2 py-0.5 rounded border border-white/10 hover:border-white/20 text-muted hover:text-foreground transition text-[9px] cursor-pointer hidden sm:inline"
+                className="px-2 py-0.5 rounded border border-border hover:border-command/40 text-muted hover:text-foreground transition text-[9px] cursor-pointer hidden sm:inline"
               >
                 RESET
               </button>
@@ -206,7 +206,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
           <button
             type="button"
             onClick={handleCopy}
-            className="px-2 py-0.5 rounded border border-white/10 bg-white/[0.02] text-muted hover:text-foreground hover:border-white/20 transition cursor-pointer text-[10px]"
+            className="px-2 py-0.5 rounded border border-border bg-surface-secondary/20 text-muted hover:text-foreground hover:border-command/40 transition cursor-pointer text-[10px]"
           >
             {copied ? "[COPIED]" : "[COPY]"}
           </button>
@@ -240,7 +240,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
           </div>
 
           {/* Interactive Canvas HUD */}
-          <div className="absolute bottom-2.5 left-3 flex items-center gap-2 pointer-events-none text-[9px] text-muted/70 font-mono bg-black/70 px-2 py-1 rounded border border-white/10 backdrop-blur-sm">
+          <div className="absolute bottom-2.5 left-3 flex items-center gap-2 pointer-events-none text-[9px] text-muted/70 font-mono bg-black/70 px-2 py-1 rounded border border-border backdrop-blur-sm">
             <span>🖱 Drag to pan</span>
             <span>·</span>
             <span>Zoom: 50% – 500%</span>
@@ -248,7 +248,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
               <button
                 type="button"
                 onClick={handleReset}
-                className="pointer-events-auto text-accent underline ml-1 hover:text-accent/80 cursor-pointer"
+                className="pointer-events-auto text-command underline ml-1 hover:text-command/80 cursor-pointer"
               >
                 Reset
               </button>

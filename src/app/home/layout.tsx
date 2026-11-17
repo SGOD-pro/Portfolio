@@ -52,7 +52,7 @@ function HomeLayout({
         context,
         background: root
           ? getComputedStyle(root).backgroundColor
-          : "#0a0a0a",
+          : "#091512",
       };
 
       snapshotRef.current = snapshot;
@@ -98,8 +98,8 @@ function HomeLayout({
           onFrame={handleDotFrame}
           dotSize={4}
           gap={20}
-          baseColor="#383838"
-          activeColor="#b46004"
+          baseColor="#20332B"
+          activeColor="#9CAF88"
           proximity={140}
           shockRadius={250}
           shockStrength={5}
@@ -111,7 +111,7 @@ function HomeLayout({
       {/* Main Full-Page Shell */}
       <main className="flex-1 w-full p-2 sm:p-3 md:p-4 flex flex-col lg:flex-row gap-3 md:gap-4 relative z-10 lg:h-full lg:max-h-full lg:overflow-hidden pb-36 sm:pb-40 lg:pb-4">
         {/* Left Panel: Consistent Shell (Header + Content + CommandBox Footer) */}
-        <section className="flex-1 flex flex-col min-w-0 min-h-[500px] lg:h-full lg:overflow-hidden relative z-40 lg:z-auto">
+        <section className="flex-1 flex flex-col min-w-0 min-h-[500px] lg:h-full lg:overflow-hidden relative z-20">
           <GlassSurface
             ref={mainGlassRef}
             backdrop={sceneCanvas ?? undefined}
@@ -119,22 +119,24 @@ function HomeLayout({
             backdropFit="stretch"
             live={false}
             borderRadius={24}
-            refraction={0.55}
-            thickness={10}
-            bevel={0.3}
-            distortion={0.02}
+            bevelWidth={32}
+            refraction={0.85}
+            thickness={20}
+            bevel={0.5}
+            distortion={0}
             dispersion={0.02}
-            reflection={0.42}
-            frost={0.01}
-            shine={0.35}
-            borderWidth={1}
-            borderOpacity={0.12}
+            reflection={0.8}
+            frost={0}
+            shine={0.65}
+            borderWidth={0.6}
+            borderOpacity={0.09}
             tint="#ffffff"
             tintOpacity={0.01}
+            maxDpr={1.25}
             className="w-full h-full flex flex-col p-4 sm:p-5 lg:p-6 lg:overflow-hidden"
           >
             {/* 1. Consistent Shell Header (Mac dots + title on all pages) */}
-            <header className="flex items-center justify-between border-b border-white/10 pb-2.5 shrink-0">
+            <header className="flex items-center justify-between border-b border-border pb-2.5 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-danger shrink-0" />
                 <span className="h-2 w-2 rounded-full bg-warning shrink-0" />
@@ -144,7 +146,7 @@ function HomeLayout({
                 </span>
               </div>
               <div className="text-[9px] text-muted/70 uppercase tracking-widest font-mono hidden sm:flex items-center gap-2">
-                <span className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.02]">
+                <span className="px-1.5 py-0.5 rounded border border-border bg-surface-secondary/40">
                   ssh · 127.0.0.1
                 </span>
               </div>
@@ -152,18 +154,20 @@ function HomeLayout({
 
             {/* 2. Scrollable Page Content Area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-3.5 pr-2 pb-28 sm:pb-32 lg:pb-2 focus:outline-none terminal-scrollbar">
-              <div className="min-h-full flex flex-col">{children}</div>
+              <div className="min-h-full flex flex-col slide-page">
+                {children}
+              </div>
             </div>
 
             {/* 3. Consistent Shell Footer (Search / Nav CommandBox) - Fixed with Glass + Frost on Mobile */}
-            <footer className="fixed bottom-0 left-0 right-0 z-[100] bg-[#0a0a0a]/90 backdrop-blur-2xl border-t border-white/20 px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] lg:static lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:border-t lg:border-white/10 lg:pt-3 lg:pb-2 lg:px-0 lg:shadow-none shrink-0">
+            <footer className="fixed bottom-0 left-0 right-0 z-[100] bg-background/90 backdrop-blur-2xl border-t border-border px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] lg:static lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:border-t lg:border-border lg:pt-3 lg:pb-2 lg:px-0 lg:shadow-none shrink-0">
               <CommandBox />
             </footer>
           </GlassSurface>
         </section>
 
         {/* Right Panel: Sidebar (3D Logo + Connect Links) */}
-        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-10 lg:mb-0 relative z-10 lg:z-auto">
+        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-10 lg:mb-0 relative z-10">
           <GlassSurface
             ref={sidebarGlassRef}
             backdrop={sceneCanvas ?? undefined}
@@ -171,18 +175,20 @@ function HomeLayout({
             backdropFit="stretch"
             live={false}
             borderRadius={24}
-            refraction={0.55}
-            thickness={10}
-            bevel={0.3}
-            distortion={0.02}
+            bevelWidth={32}
+            refraction={0.85}
+            thickness={20}
+            bevel={0.5}
+            distortion={0}
             dispersion={0.02}
-            reflection={0.42}
-            frost={0.01}
-            shine={0.35}
-            borderWidth={1}
-            borderOpacity={0.12}
+            reflection={0.8}
+            frost={0}
+            shine={0.65}
+            borderWidth={0.6}
+            borderOpacity={0.09}
             tint="#ffffff"
             tintOpacity={0.01}
+            maxDpr={1.25}
             className="w-full h-full p-4 sm:p-5 flex flex-col overflow-y-auto terminal-scrollbar"
           >
             {rightSide}

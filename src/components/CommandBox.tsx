@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getLocalCache } from "@/lib/client-cache";
 import type { ProjectListResult } from "@/lib/github/types";
 
@@ -56,6 +56,13 @@ const STATIC_CANDIDATES: CommandCandidate[] = [
     description: "Get in Touch",
     route: "/home/contact",
     keywords: ["email", "message", "hire", "reach", "connect"],
+  },
+  {
+    name: "resume",
+    type: "command",
+    description: "Inspect Resume / CV (PDF)",
+    route: "https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link",
+    keywords: ["cv", "resume", "pdf", "profile", "curriculum", "credentials"],
   },
   // Default verified projects (related work)
   {
@@ -288,9 +295,11 @@ function CommandBox() {
     if (candidate) {
       setShowError(false);
       setCommandValue("");
-      startTransition(() => {
+      if (candidate.route.startsWith("http")) {
+        window.open(candidate.route, "_blank", "noopener,noreferrer");
+      } else {
         router.push(candidate.route);
-      });
+      }
       return;
     }
 
@@ -302,18 +311,18 @@ function CommandBox() {
       {/* Probability Guess & Related Work Indicator */}
       {bestMatch && trimmedValue && (
         <div className="flex flex-wrap items-center gap-2 mb-2 text-[11px] font-mono animate-fadeIn">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/15 border border-accent/40 text-accent font-semibold shadow-[0_0_12px_rgba(180,96,4,0.15)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-command/15 border border-command/40 text-command font-semibold shadow-[0_0_12px_rgba(156,175,136,0.15)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-command animate-ping" />
             <span className="text-muted/80">Guess:</span>
             <span className="text-foreground font-bold">{bestMatch.name}</span>
-            <span className="text-accent">({bestMatch.probability}%)</span>
-            <span className="text-muted/60 text-[9px] uppercase px-1 rounded bg-white/5 border border-white/10">
+            <span className="text-command">({bestMatch.probability}%)</span>
+            <span className="text-muted/60 text-[9px] uppercase px-1 rounded bg-surface-secondary/60 border border-border">
               {bestMatch.type}
             </span>
           </div>
 
           <span className="text-muted/70 text-[10px] hidden sm:inline">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-foreground text-[9px] border border-white/20 font-mono">Tab ⇥</kbd> to complete · <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-foreground text-[9px] border border-white/20 font-mono">Enter ↵</kbd> to view
+            Press <kbd className="px-1.5 py-0.5 rounded bg-surface-secondary text-foreground text-[9px] border border-border font-mono">Tab ⇥</kbd> to complete · <kbd className="px-1.5 py-0.5 rounded bg-surface-secondary text-foreground text-[9px] border border-border font-mono">Enter ↵</kbd> to view
           </span>
 
           {relatedWork.length > 0 && (
@@ -327,9 +336,9 @@ function CommandBox() {
                     setCommandValue(item.name);
                     executeNavigation(item.name, item);
                   }}
-                  className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-muted hover:text-accent hover:border-accent/40 hover:bg-accent/15 transition-colors cursor-pointer"
+                  className="px-1.5 py-0.5 rounded border border-border bg-surface-secondary/40 text-muted hover:text-command hover:border-command/40 hover:bg-command/15 transition-colors cursor-pointer"
                 >
-                  {item.name} <span className="text-accent/80 font-mono">({item.probability}%)</span>
+                  {item.name} <span className="text-command/80 font-mono">({item.probability}%)</span>
                 </button>
               ))}
             </div>
@@ -400,7 +409,7 @@ function CommandBox() {
                 className="pointer-events-none absolute inset-0 z-0 flex items-center font-mono text-xs py-1 leading-normal select-none"
               >
                 <span className="opacity-0 whitespace-pre">{commandValue}</span>
-                <span className="text-accent/80 font-medium whitespace-pre">
+                <span className="text-command/80 font-medium whitespace-pre">
                   {suggestionTail}
                 </span>
               </div>
@@ -420,8 +429,8 @@ function CommandBox() {
                 aria-current={isActive ? "page" : undefined}
                 className={`rounded px-2.5 py-0.5 text-[10px] sm:text-[11px] transition-all font-mono min-h-[24px] inline-flex items-center justify-center ${
                   isActive
-                    ? "border border-accent text-accent bg-accent/20 font-semibold shadow-[0_0_8px_rgba(180,96,4,0.25)]"
-                    : "border border-white/10 text-muted hover:text-foreground hover:border-white/30 hover:bg-white/[0.04]"
+                    ? "border border-command text-command bg-command/20 font-semibold shadow-[0_0_8px_rgba(156,175,136,0.25)]"
+                    : "border border-border text-muted hover:text-foreground hover:border-command/40 hover:bg-surface-secondary/40"
                 }`}
               >
                 {tag}
