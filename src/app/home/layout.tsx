@@ -4,7 +4,6 @@ import DotGrid from "@/components/DotBackground";
 import GlassSurface from "@/components/GlassSurface";
 import CommandBox from "@/components/CommandBox";
 import React, {
-  ViewTransition,
   useCallback,
   useRef,
   useState,
@@ -120,15 +119,18 @@ function HomeLayout({
             backdropFit="stretch"
             live={false}
             borderRadius={24}
-            refraction={1}
-            thickness={24}
-            bevel={0.65}
-            dispersion={0.12}
-            reflection={1}
-            frost={0.2}
-            shine={0.75}
+            refraction={0.55}
+            thickness={10}
+            bevel={0.3}
+            distortion={0.02}
+            dispersion={0.02}
+            reflection={0.42}
+            frost={0.01}
+            shine={0.35}
+            borderWidth={1}
+            borderOpacity={0.12}
             tint="#ffffff"
-            tintOpacity={0.04}
+            tintOpacity={0.01}
             className="w-full h-full flex flex-col p-4 sm:p-5 lg:p-6 lg:overflow-hidden"
           >
             {/* 1. Consistent Shell Header (Mac dots + title on all pages) */}
@@ -148,22 +150,20 @@ function HomeLayout({
               </div>
             </header>
 
-            {/* 2. Scrollable Page Content Area with Transition */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-3.5 pr-2 pb-28 sm:pb-32 lg:pb-2 focus:outline-none">
-              <ViewTransition name="page-content" default="slide-page">
-                <div className="min-h-full flex flex-col">{children}</div>
-              </ViewTransition>
+            {/* 2. Scrollable Page Content Area */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-3.5 pr-2 pb-28 sm:pb-32 lg:pb-2 focus:outline-none terminal-scrollbar">
+              <div className="min-h-full flex flex-col">{children}</div>
             </div>
 
             {/* 3. Consistent Shell Footer (Search / Nav CommandBox) - Fixed with Glass + Frost on Mobile */}
-            <footer className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-2xl border-t border-white/20 px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] lg:static lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:border-t lg:border-white/10 lg:pt-3 lg:pb-2 lg:px-0 lg:shadow-none shrink-0">
+            <footer className="fixed bottom-0 left-0 right-0 z-[100] bg-[#0a0a0a]/90 backdrop-blur-2xl border-t border-white/20 px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] lg:static lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:border-t lg:border-white/10 lg:pt-3 lg:pb-2 lg:px-0 lg:shadow-none shrink-0">
               <CommandBox />
             </footer>
           </GlassSurface>
         </section>
 
         {/* Right Panel: Sidebar (3D Logo + Connect Links) */}
-        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-8 lg:mb-0 relative -z-10 lg:z-auto">
+        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-10 lg:mb-0 relative z-10 lg:z-auto">
           <GlassSurface
             ref={sidebarGlassRef}
             backdrop={sceneCanvas ?? undefined}
@@ -171,16 +171,19 @@ function HomeLayout({
             backdropFit="stretch"
             live={false}
             borderRadius={24}
-            refraction={1}
-            thickness={24}
-            bevel={0.65}
-            dispersion={0.12}
-            reflection={1}
-            frost={0.04}
-            shine={0.75}
+            refraction={0.55}
+            thickness={10}
+            bevel={0.3}
+            distortion={0.02}
+            dispersion={0.02}
+            reflection={0.42}
+            frost={0.01}
+            shine={0.35}
+            borderWidth={1}
+            borderOpacity={0.12}
             tint="#ffffff"
-            tintOpacity={0.04}
-            className="w-full h-full p-4 sm:p-5 flex flex-col overflow-y-auto"
+            tintOpacity={0.01}
+            className="w-full h-full p-4 sm:p-5 flex flex-col overflow-y-auto terminal-scrollbar"
           >
             {rightSide}
           </GlassSurface>

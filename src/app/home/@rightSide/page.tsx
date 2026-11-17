@@ -11,6 +11,8 @@ import { StaticCodeFallback } from "@/components/StaticCodeFallback";
 import type { GitHubRepo, GitHubProfile } from "@/lib/github/types";
 import { getLocalCache, setLocalCache } from "@/lib/client-cache";
 import { useReveal } from "@/hooks/useReveal";
+import AnimatedNumber from "@/components/AnimatedNumber";
+import AnimatedLanguageBar from "@/components/AnimatedLanguageBar";
 
 const CodeIcon3D = dynamic(() => import("@/components/3DCode"), {
   ssr: false,
@@ -244,12 +246,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
                     </div>
                     <span className="text-muted text-[10px]">{pctDisplay}</span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${color} transition-all duration-300`}
-                      style={{ width: `${Math.max(1, pctNumber)}%` }}
-                    />
-                  </div>
+                  <AnimatedLanguageBar percentage={pctNumber} color={color} />
                 </div>
               );
             })}
@@ -277,8 +274,12 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Stars / Forks:</span>
-            <span className="text-accent">
-              ★ {repo.stargazersCount} · ⑂ {repo.forksCount}
+            <span className="text-accent inline-flex items-center gap-1.5">
+              <span>★</span>
+              <AnimatedNumber value={repo.stargazersCount} />
+              <span className="text-white/20">·</span>
+              <span>⑂</span>
+              <AnimatedNumber value={repo.forksCount} />
             </span>
           </div>
         </div>
@@ -391,21 +392,21 @@ function DefaultSidebar() {
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
             <span className="inline-flex items-center gap-1" title="Contributions in the last year">
               <strong className="text-accent font-bold">
-                {profile?.totalContributions || 833}
+                <AnimatedNumber value={profile?.totalContributions || 833} />
               </strong>
               <span className="text-muted/80">contribs</span>
             </span>
             <span className="text-white/20">·</span>
             <span className="inline-flex items-center gap-1" title="GitHub Followers">
               <strong className="text-foreground font-semibold">
-                {profile?.followers ?? 8}
+                <AnimatedNumber value={profile?.followers ?? 8} />
               </strong>
               <span className="text-muted/80">followers</span>
             </span>
             <span className="text-white/20">·</span>
             <span className="inline-flex items-center gap-1" title="GitHub Following">
               <strong className="text-foreground font-semibold">
-                {profile?.following ?? 1}
+                <AnimatedNumber value={profile?.following ?? 2} />
               </strong>
               <span className="text-muted/80">following</span>
             </span>

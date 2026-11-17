@@ -128,36 +128,66 @@ body,
 /* Custom Sleek Terminal Scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--accent) 38%, rgba(255, 255, 255, 0.12)) transparent;
+  scrollbar-color: rgba(180, 96, 4, 0.55) transparent;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
 }
 
-::-webkit-scrollbar-button {
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
 
-::-webkit-scrollbar-track {
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
   background: transparent !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--accent) 35%, rgba(255, 255, 255, 0.12));
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: rgba(180, 96, 4, 0.45) !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: #b46004 !important;
 }
 
-::-webkit-scrollbar-corner {
-  background: transparent;
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+.terminal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 96, 4, 0.55) transparent;
+}
+
+.terminal-scrollbar::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(180, 96, 4, 0.45) !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b46004 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

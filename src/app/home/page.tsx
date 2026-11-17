@@ -61,12 +61,10 @@ function Home() {
 
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 grow items-start mt-2">
         {/* Left Column: Hero & Narrative */}
-        <section className="lg:col-span-7 flex flex-col">
+        <section data-reveal className="lg:col-span-7 flex flex-col">
           <TextReveal
             text="Souvik Karmakar"
             className="text-3xl sm:text-4xl lg:text-[46px] font-sans font-semibold tracking-[-0.02em] text-foreground leading-[1.12]"
-            delay={0.16}
-            stagger={0.025}
           />
           <p className="mt-2 text-base sm:text-lg font-sans font-medium text-accent leading-snug">
             Fullstack Developer &amp; Applied AI Engineer
@@ -102,7 +100,7 @@ function Home() {
         </section>
 
         {/* Right Column: Public Engineering Activity */}
-        <section className="lg:col-span-5 flex flex-col gap-4">
+        <section data-reveal className="lg:col-span-5 flex flex-col gap-4">
           <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h2 className="text-xs uppercase tracking-wider text-muted font-sans font-semibold">

@@ -8,6 +8,7 @@ import type { GitHubRepo, ProjectListResult, GitHubDocument } from "@/lib/github
 import { getLocalCache, setLocalCache } from "@/lib/client-cache";
 import { useReveal } from "@/hooks/useReveal";
 import TextReveal from "@/components/TextReveal";
+import AnimatedNumber from "@/components/AnimatedNumber";
 
 const REPO_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
 
@@ -88,7 +89,7 @@ function ProjectReaderView({
   }, [project, docPath, retryCount, cacheKey]);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  useReveal(containerRef, [project, doc, docData?.document.path]);
+  useReveal(containerRef, [project, doc, docData?.document.path], { resetOnDepsChange: true });
 
   const selectedRepo = allProjects.find((p) => p.name.toLowerCase() === project.toLowerCase());
 
@@ -240,7 +241,10 @@ function ProjectReaderView({
 
         {/* Successfully Loaded Document */}
         {!loading && docData && (
-          <div data-reveal className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+          <div
+            data-reveal
+            className="rounded-xl border border-white/15 bg-black/60 backdrop-blur-md p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.08)]"
+          >
             <SafeMarkdown
               content={docData.document.content}
               repo={project}
@@ -374,7 +378,10 @@ function ProjectListView({
                       {project.language}
                     </span>
                   )}
-                  <span>★ {project.stargazersCount}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-warning">★</span>
+                    <AnimatedNumber value={project.stargazersCount} />
+                  </span>
                   <span>Updated {formatDate(project.updatedAt)}</span>
                 </div>
 

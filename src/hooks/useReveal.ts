@@ -8,23 +8,22 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP);
 }
 
-interface RevealOptions {
+export interface RevealOptions {
   selector?: string;
   distance?: number;
   duration?: number;
   stagger?: number;
   delay?: number;
-  once?: boolean;
+  resetOnDepsChange?: boolean;
 }
 
 /**
- * Premium text and component directional reveal using GSAP.
- * Strictly adheres to animations.md & official GreenSock React contract:
- * - Scoped via useGSAP hook with automatic context cleanup.
- * - Prevents jitter by not re-animating already visible elements on background state updates.
- * - Delays entry slightly (0.16s) to allow page transitions to settle smoothly first.
- * - Bypasses animation under prefers-reduced-motion: reduce.
- * - Cleans up inline styles with clearProps: "opacity,transform" once settled.
+ * Coherent, restrained component entrance using GSAP.
+ * - Single motion owner: GSAP coordinates all page and card entrances.
+ * - Tracks revealed elements via WeakSet so newly loaded cards reveal cleanly without re-animating visible items.
+ * - Small upward movement (8px), power2.out, ~0.3s duration, 0.04s stagger.
+ * - Respects prefers-reduced-motion: reduce immediately.
+ * - Cleans up inline styles once settled so layout and stacking contexts remain pristine.
  */
 export function useReveal(
   containerRef: RefObject<HTMLElement | null>,
@@ -33,37 +32,50 @@ export function useReveal(
 ) {
   const {
     selector = "[data-reveal]",
-    distance = 10,
-    duration = 0.32,
+    distance = 8,
+    duration = 0.3,
     stagger = 0.04,
-    delay = 0.16,
-    once = true,
+    delay = 0,
+    resetOnDepsChange = false,
   } = options;
 
-  const hasAnimatedRef = useRef(false);
+  const revealedElementsRef = useRef<WeakSet<Element>>(new WeakSet());
 
   useGSAP(
     () => {
       if (!containerRef.current) return;
       if (typeof window === "undefined") return;
 
-      if (once && hasAnimatedRef.current) {
-        return;
+      if (resetOnDepsChange) {
+        revealedElementsRef.current = new WeakSet();
       }
 
-      const targets = containerRef.current.querySelectorAll(selector);
-      if (!targets || targets.length === 0) return;
+      const container = containerRef.current;
+      const allTargets = Array.from(container.querySelectorAll(selector));
 
+      if (allTargets.length === 0) return;
+
+      // Handle reduced motion
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        gsap.set(targets, { opacity: 1, y: 0 });
-        hasAnimatedRef.current = true;
+        allTargets.forEach((el) => {
+          gsap.set(el, { opacity: 1, y: 0, clearProps: "opacity,transform" });
+          revealedElementsRef.current.add(el);
+        });
         return;
       }
 
-      hasAnimatedRef.current = true;
+      // Filter only elements not yet revealed
+      const newTargets = allTargets.filter(
+        (el) => !revealedElementsRef.current.has(el)
+      );
+
+      if (newTargets.length === 0) return;
+
+      // Mark targets immediately to avoid double-triggers
+      newTargets.forEach((el) => revealedElementsRef.current.add(el));
 
       gsap.fromTo(
-        targets,
+        newTargets,
         {
           opacity: 0,
           y: distance,

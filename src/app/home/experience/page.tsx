@@ -47,8 +47,6 @@ function Experience() {
             <TextReveal
               text="Experience"
               className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
-              delay={0.16}
-              stagger={0.025}
             />
             <p data-reveal className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
               Technical background, engineering project focus, and core developer practices.

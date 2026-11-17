@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { resolveMarkdownUrl } from "@/lib/markdown/resolveUrl";
+import MermaidBlock from "@/components/MermaidBlock";
 
 export { resolveMarkdownUrl };
 
@@ -243,12 +244,20 @@ export default function SafeMarkdown({
         i++;
       }
       i++; // skip closing ```
+      const isMermaid = language.toLowerCase() === "mermaid";
       nodes.push(
-        <CodeBlock
-          key={`code-block-${blockKey++}`}
-          language={language}
-          code={codeLines.join("\n")}
-        />
+        isMermaid ? (
+          <MermaidBlock
+            key={`mermaid-block-${blockKey++}`}
+            code={codeLines.join("\n")}
+          />
+        ) : (
+          <CodeBlock
+            key={`code-block-${blockKey++}`}
+            language={language}
+            code={codeLines.join("\n")}
+          />
+        )
       );
       continue;
     }

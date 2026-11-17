@@ -87,8 +87,6 @@ function Contact() {
         <TextReveal
           text="Contact"
           className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
-          delay={0.16}
-          stagger={0.025}
         />
         <p data-reveal className="mt-0.5 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
           Reach out for software engineering opportunities, contract projects, or technical collaboration.

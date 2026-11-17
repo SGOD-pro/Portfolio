@@ -49,7 +49,8 @@ void main() {
 }
 `;
 
-// Fixed rounded glass volume. No time, pointer, noise, springs or shape morphing.
+// Fixed rounded glass volume with liquid bevel refraction.
+// Center is crystal clear and undistorted; refraction and chromatic dispersion occur along the bevel edge.
 const FRAGMENT = `#version 300 es
 precision highp float;
 in vec2 uv;
@@ -61,26 +62,18 @@ uniform float frost, shine, angle, borderWidth, borderOpacity, hasSource, clipTo
 uniform vec4 surfaceTint;
 out vec4 fragColor;
 
+// Signed distance function for rounded rectangle
 float outline(vec2 p) {
   vec2 q = abs(p) - (size * 0.5 - vec2(radius));
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
 }
 
-float field(vec3 p) {
-  float rim = max(0.02, min(thickness * 0.48, 24.0) * bevel);
-  vec2 relative = p.xy / max(size * 0.5, vec2(1.0));
-  float dome = 1.0 - distortion * 0.3 * clamp(dot(relative, relative) * 0.5, 0.0, 1.0);
-  vec2 q = vec2(outline(p.xy) + rim, abs(p.z) - thickness * 0.5 * dome + rim);
-  // Conservative stepping for the slightly curved front/back faces.
-  return (length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - rim) * 0.75;
-}
-
-vec3 surfaceNormal(vec3 p) {
-  float e = 0.12;
-  return normalize(vec3(
-    field(p + vec3(e, 0.0, 0.0)) - field(p - vec3(e, 0.0, 0.0)),
-    field(p + vec3(0.0, e, 0.0)) - field(p - vec3(0.0, e, 0.0)),
-    field(p + vec3(0.0, 0.0, e)) - field(p - vec3(0.0, 0.0, e))
+// 2D surface normal from the signed distance field gradient
+vec2 surfaceNormal2D(vec2 p) {
+  float h = 0.5;
+  return normalize(vec2(
+    outline(p + vec2(h, 0.0)) - outline(p - vec2(h, 0.0)),
+    outline(p + vec2(0.0, h)) - outline(p - vec2(0.0, h))
   ));
 }
 
@@ -90,31 +83,6 @@ vec4 sampleScene(vec2 point) {
   return texture(textureImage, vec2(clamp(st.x, 0.0, 1.0), 1.0 - clamp(st.y, 0.0, 1.0)));
 }
 
-vec4 smoothScene(vec2 point) {
-  if (frost < 0.001) return sampleScene(point);
-  float r = frost * 7.0;
-  return sampleScene(point) * 0.4 + (
-    sampleScene(point + vec2(r, 0.0)) + sampleScene(point - vec2(r, 0.0)) +
-    sampleScene(point + vec2(0.0, r)) + sampleScene(point - vec2(0.0, r))
-  ) * 0.15;
-}
-
-vec2 landing(vec3 p, vec3 direction, vec2 fallback) {
-  if (direction.z > -0.001) return fallback;
-  float travel = (-thickness * 0.5 - 1.0 - p.z) / direction.z;
-  return p.xy + size * 0.5 + direction.xy * max(travel, 0.0);
-}
-
-// Static studio lights, adapted from the original component's reflection model.
-vec3 studio(vec3 direction) {
-  vec2 a = vec2(atan(direction.x, direction.z), direction.y);
-  float key = (1.0 - smoothstep(0.22, 0.42, abs(a.x + 0.62))) *
-              (1.0 - smoothstep(0.12, 0.3, abs(a.y - 0.5)));
-  float strip = (1.0 - smoothstep(0.05, 0.12, abs(a.x - 0.95))) *
-                (1.0 - smoothstep(0.35, 0.8, abs(a.y - 0.05)));
-  return vec3(key + strip * 0.45);
-}
-
 void main() {
   vec2 point = vec2(uv.x * size.x, (1.0 - uv.y) * size.y);
   vec2 p = point - size * 0.5;
@@ -122,74 +90,76 @@ void main() {
   float mask = 1.0 - smoothstep(-aa, aa, d);
   if (mask < 0.001) { fragColor = vec4(0.0); return; }
 
-  vec3 ray = vec3(0.0, 0.0, -1.0);
-  vec3 entry = vec3(p, thickness * 0.5 + 1.0);
-  bool hit = false;
-  for (int i = 0; i < 48; i++) {
-    float distance = field(entry);
-    if (distance < 0.03) { hit = true; break; }
-    entry += ray * max(distance, 0.025);
-    if (entry.z < -thickness) break;
+  // Distance inside from the perimeter (0 at boundary, increases inwards)
+  float inside = max(0.0, -d);
+
+  // Bevel zone: liquid refraction occurs strictly within the curved bevel edge
+  float bevelZone = max(bevel * thickness * 2.5, 4.0);
+  float t = 1.0 - clamp(inside / bevelZone, 0.0, 1.0); // 1.0 at outer edge, 0.0 in interior
+
+  // Liquid curvature profile: smooth meniscus curve along the rounded bevel edge
+  float profile = pow(t, 2.2);
+
+  // Edge normal pointing outward from boundary
+  vec2 n2D = surfaceNormal2D(p);
+
+  // Liquid refraction displacement:
+  // At inside >= bevelZone (central reading area): t == 0, bend == 0 (zero distortion, crystal clear!)
+  float bendScale = refractAmount * thickness * 0.75;
+  vec2 bend = n2D * (profile * bendScale);
+
+  // Light angle and specular rim highlight along the liquid edge
+  vec2 lightDir = vec2(cos(angle), sin(angle));
+  float nDotL = clamp(dot(n2D, lightDir), 0.0, 1.0);
+  float rim = pow(t, 2.0) * (0.3 + 0.7 * nDotL) * shine * reflection;
+
+  // Thin, crisp border stroke
+  float border = 0.0;
+  if (borderWidth > 0.0) {
+    border = (1.0 - smoothstep(0.0, borderWidth + aa, inside)) * borderOpacity;
   }
-  if (!hit) { fragColor = vec4(0.0); return; }
-
-  vec3 n = surfaceNormal(entry);
-  float ior = 1.0 + refractAmount * 0.5;
-  vec3 inside = refract(ray, n, 1.0 / ior);
-  vec3 exitPoint = entry;
-  vec3 exitNormal = -n;
-  vec3 outgoing = ray;
-  bool escaped = false;
-
-  // Only trace the interior when there is a real texture to refract.
-  if (hasSource > 0.5) {
-    exitPoint = entry + inside * 0.16;
-    for (int bounce = 0; bounce < 2; bounce++) {
-      bool reachedExit = false;
-      for (int i = 0; i < 64; i++) {
-        float distance = field(exitPoint);
-        if (distance > -0.025) { reachedExit = true; break; }
-        exitPoint += inside * max(-distance, 0.025);
-      }
-      if (!reachedExit) break;
-      exitNormal = surfaceNormal(exitPoint);
-      outgoing = refract(inside, -exitNormal, ior);
-      if (dot(outgoing, outgoing) > 0.001) { escaped = true; break; }
-      inside = reflect(inside, -exitNormal);
-      exitPoint += inside * 0.16;
-    }
-  }
-
-  float cosi = clamp(dot(-ray, n), 0.0, 1.0);
-  float f0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
-  float fresnel = f0 + (1.0 - f0) * pow(1.0 - cosi, 5.0);
-  vec3 mirror = reflect(ray, n);
-  // Rotate only the fixed light direction, never the surface or its contents.
-  float rotation = angle - 5.49778714;
-  mirror.xy = mat2(cos(rotation), sin(rotation), -sin(rotation), cos(rotation)) * mirror.xy;
-  vec3 light = studio(mirror);
-  float edgeDepth = max(-d, 0.0);
-  float border = borderWidth > 0.0 ? 1.0 - smoothstep(borderWidth, borderWidth + aa, edgeDepth) : 0.0;
-  float highlightAlpha = clamp(shine * reflection * (fresnel * 0.32 + max(light.r, max(light.g, light.b)) * 0.5) +
-                               border * borderOpacity, 0.0, 0.9);
-  vec3 highlight = vec3(1.0);
+  float edgeHighlight = clamp(rim + border, 0.0, 0.95);
 
   if (hasSource > 0.5) {
-    vec2 samplePoint = escaped ? landing(exitPoint, outgoing, point) : point;
-    vec4 color = smoothScene(samplePoint);
-    if (escaped && dispersion > 0.001 && refractAmount > 0.001) {
-      vec3 red = refract(inside, -exitNormal, max(1.0, ior - dispersion * 0.03));
-      vec3 blue = refract(inside, -exitNormal, ior + dispersion * 0.03);
-      color.r = smoothScene(landing(exitPoint, red, samplePoint)).r;
-      color.b = smoothScene(landing(exitPoint, blue, samplePoint)).b;
+    vec4 color;
+    if (t > 0.001 && dispersion > 0.001 && refractAmount > 0.001) {
+      // Chromatic dispersion strictly on the liquid bevel
+      float disp = dispersion * 18.0 * profile;
+      vec2 redPt = point - (bend + n2D * disp);
+      vec2 greenPt = point - bend;
+      vec2 bluePt = point - (bend - n2D * disp);
+
+      color.r = sampleScene(redPt).r;
+      color.g = sampleScene(greenPt).g;
+      color.b = sampleScene(bluePt).b;
+      color.a = sampleScene(greenPt).a;
+    } else {
+      // Crystal clear undistorted sampling in the central reading area!
+      color = sampleScene(point - bend);
     }
+
+    // Apply frost blur only if frost is configured and only on the edge
+    if (frost > 0.001 && t > 0.0) {
+      float r = frost * 4.0 * profile;
+      vec4 blurColor = (
+        sampleScene(point - bend + vec2(r, 0.0)) +
+        sampleScene(point - bend - vec2(r, 0.0)) +
+        sampleScene(point - bend + vec2(0.0, r)) +
+        sampleScene(point - bend - vec2(0.0, r))
+      ) * 0.25;
+      color = mix(color, blurColor, frost * 0.5);
+    }
+
+    // Apply surface tint (subtle glass tint, e.g. 1% white or amber)
     color.rgb = mix(color.rgb, surfaceTint.rgb, surfaceTint.a);
-    float alpha = color.a + highlightAlpha * (1.0 - color.a);
-    vec3 premultiplied = color.rgb * color.a * (1.0 - highlightAlpha) + highlight * highlightAlpha;
+
+    // Composite edge specular highlight over the refracted color
+    vec3 premultiplied = color.rgb * color.a * (1.0 - edgeHighlight) + vec3(1.0) * edgeHighlight;
+    float alpha = color.a + edgeHighlight * (1.0 - color.a);
     fragColor = vec4(premultiplied / max(alpha, 0.0001), alpha * mask);
   } else {
-    // No texture: honest surface lighting, with live DOM children untouched.
-    fragColor = vec4(highlight, highlightAlpha * mask);
+    // Honest fallback surface lighting when no texture is available
+    fragColor = vec4(vec3(1.0), edgeHighlight * mask);
   }
 }
 `;
@@ -234,19 +204,19 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       backdropRef,
       backdropFit = "cover",
       live = false,
-      refraction = 0.8,
-      thickness = 12,
-      reflection = 1,
-      distortion = 0.22,
-      bevel = 0.45,
-      dispersion = 0.12,
-      frost = 0.05,
-      shine = 0.75,
+      refraction = 0.55,
+      thickness = 10,
+      reflection = 0.42,
+      distortion = 0.02,
+      bevel = 0.3,
+      dispersion = 0.02,
+      frost = 0.01,
+      shine = 0.35,
       shineAngle = 315,
       tint = "#ffffff",
-      tintOpacity = 0.045,
+      tintOpacity = 0.01,
       borderWidth = 1,
-      borderOpacity = 0.28,
+      borderOpacity = 0.12,
       maxDpr = 1.5,
       onEffectError,
       ...rest

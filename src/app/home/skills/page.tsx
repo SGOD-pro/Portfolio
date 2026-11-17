@@ -43,8 +43,6 @@ function Skills() {
         <TextReveal
           text="Skills & Capabilities"
           className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
-          delay={0.16}
-          stagger={0.02}
         />
         <p data-reveal className="mt-0.5 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
           Core technical competencies, production frameworks, and engineering tools across fullstack and applied AI development.

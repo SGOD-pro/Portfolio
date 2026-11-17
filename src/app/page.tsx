@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, startTransition, addTransitionType } from "react";
+import { useEffect, startTransition } from "react";
 
 export default function Index() {
   const router = useRouter();
@@ -12,7 +12,6 @@ export default function Index() {
       if (event.key === "Enter") {
         event.preventDefault();
         startTransition(() => {
-          addTransitionType("slide");
           router.push("/home");
         });
       }
