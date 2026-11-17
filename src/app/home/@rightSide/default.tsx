@@ -1,9 +1,5 @@
-import React from 'react'
+import RightSide from "./page";
 
-function RightSideDefault() {
-  return (
-    <div>RightSideDefault</div>
-  )
+export default function RightSideDefault() {
+  return <RightSide />;
 }
-
-export default RightSideDefault

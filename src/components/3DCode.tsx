@@ -1,11 +1,10 @@
-"use no memo"
-"use client"
+"use client";
 
-import React, { useMemo, useRef, useState, useEffect, useCallback, useId } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, OrbitControls } from '@react-three/drei';
-import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
-import * as THREE from 'three';
+import React, { useMemo, useRef, useState, useEffect, useCallback, useId, useSyncExternalStore } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
+import * as THREE from "three";
 
 const SVG_STRING = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M10.218 3.216a.75.75 0 0 0-1.436-.431l-3 10a.75.75 0 0 0 1.436.43zM4.53 4.97a.75.75 0 0 1 0 1.06L2.56 8l1.97 1.97a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0m6.94 6.06a.75.75 0 0 1 0-1.06L13.44 8l-1.97-1.97a.75.75 0 0 1 1.06-1.06l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0" clip-rule="evenodd"/></svg>`;
 
@@ -26,54 +25,81 @@ type CodeIcon3DProps = {
   isInteracting?: boolean;
   resetOnRelease?: boolean;
   resetRotationTrigger?: number;
-  materialType?: 'clay' | 'metallic' | 'plastic' | 'glossy' | 'glass';
+  materialType?: "clay" | "metallic" | "plastic" | "glossy" | "glass";
 };
 
 const buildMaterial = (
-  materialType: NonNullable<CodeIcon3DProps['materialType']>,
+  materialType: NonNullable<CodeIcon3DProps["materialType"]>,
   color: string,
   emissiveColor: string,
   metalness: number,
   roughness: number
 ) => {
   switch (materialType) {
-    case 'glass':
+    case "glass":
       return new THREE.MeshPhysicalMaterial({
-        color, emissive: emissiveColor, emissiveIntensity: 0.08,
-        metalness: 0, roughness: 0.08, transmission: 0.9, transparent: true,
-        opacity: 0.7, ior: 1.5, thickness: 0.6, clearcoat: 1,
-        clearcoatRoughness: 0.1, side: THREE.DoubleSide
+        color,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.08,
+        metalness: Math.min(metalness * 0.1, 0.1),
+        roughness: Math.min(roughness * 0.1, 0.1),
+        transmission: 0.9,
+        transparent: true,
+        opacity: 0.7,
+        ior: 1.5,
+        thickness: 0.6,
+        clearcoat: 1,
+        clearcoatRoughness: 0.1,
+        side: THREE.DoubleSide,
       });
-    case 'glossy':
+    case "glossy":
       return new THREE.MeshPhysicalMaterial({
-        color, emissive: emissiveColor, emissiveIntensity: 0.16,
-        metalness: 0.6, roughness: 0.1, clearcoat: 1,
-        clearcoatRoughness: 0.05, side: THREE.DoubleSide
+        color,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.16,
+        metalness: metalness || 0.6,
+        roughness: roughness || 0.1,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        side: THREE.DoubleSide,
       });
-    case 'metallic':
+    case "metallic":
       return new THREE.MeshPhysicalMaterial({
-        color, emissive: emissiveColor, emissiveIntensity: 0.18,
-        metalness: 1, roughness: 0.15, clearcoat: 0.6,
-        clearcoatRoughness: 0.08, side: THREE.DoubleSide
+        color,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.18,
+        metalness: metalness || 1,
+        roughness: roughness || 0.15,
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.08,
+        side: THREE.DoubleSide,
       });
-    case 'plastic':
+    case "plastic":
       return new THREE.MeshStandardMaterial({
-        color, emissive: emissiveColor, emissiveIntensity: 0.1,
-        metalness: 0.2, roughness: 0.45, side: THREE.DoubleSide
+        color,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.1,
+        metalness: metalness * 0.4 || 0.2,
+        roughness: roughness || 0.45,
+        side: THREE.DoubleSide,
       });
-    case 'clay':
+    case "clay":
     default:
       return new THREE.MeshStandardMaterial({
-        color, emissive: emissiveColor, emissiveIntensity: 0.08,
-        metalness: 0.1, roughness: 0.85, side: THREE.DoubleSide
+        color,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.08,
+        metalness: metalness * 0.2 || 0.1,
+        roughness: roughness || 0.85,
+        side: THREE.DoubleSide,
       });
   }
 };
 
 function CodeIcon3D({
   extrudeDepth = 0.6,
-  color = '#b46004',
-  emissiveColor = '#b46004',
+  color = "#b46004",
+  emissiveColor = "#b46004",
   size = 3,
   rotationSpeed = 0.3,
   metalness = 0.5,
@@ -87,7 +113,7 @@ function CodeIcon3D({
   isInteracting = false,
   resetOnRelease = true,
   resetRotationTrigger,
-  materialType = 'glossy',
+  materialType = "glossy",
 }: CodeIcon3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -99,8 +125,12 @@ function CodeIcon3D({
     const loader = new SVGLoader();
     const svgData = loader.parse(SVG_STRING.replace(/currentColor/g, color));
     const extrudeSettings: THREE.ExtrudeGeometryOptions = {
-      depth: extrudeDepth, bevelEnabled, bevelThickness, bevelSize,
-      bevelSegments: 4, curveSegments: 12,
+      depth: extrudeDepth,
+      bevelEnabled,
+      bevelThickness,
+      bevelSize,
+      bevelSegments: 4,
+      curveSegments: 12,
     };
     const meshes: THREE.Mesh[] = [];
     svgData.paths.forEach((path) => {
@@ -117,22 +147,33 @@ function CodeIcon3D({
       });
     });
     const group = new THREE.Group();
-    meshes.forEach(m => group.add(m));
+    meshes.forEach((m) => group.add(m));
     const box = new THREE.Box3().setFromObject(group);
     const center = box.getCenter(new THREE.Vector3());
     const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
-    const targetScale = size / maxDim;
+    const targetScale = size / (maxDim || 1);
     group.scale.setScalar(targetScale);
     group.position.copy(center.clone().negate().multiplyScalar(targetScale));
     return group;
-  }, [extrudeDepth, color, emissiveColor, size, metalness, roughness, bevelEnabled, bevelThickness, bevelSize, materialType]);
+  }, [
+    extrudeDepth,
+    color,
+    emissiveColor,
+    size,
+    metalness,
+    roughness,
+    bevelEnabled,
+    bevelThickness,
+    bevelSize,
+    materialType,
+  ]);
 
   useEffect(() => {
     return () => {
       iconGroup.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.geometry?.dispose();
-          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose?.());
+          if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
           else child.material?.dispose?.();
         }
       });
@@ -163,27 +204,37 @@ function CodeIcon3D({
     }
   });
 
-  const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (!groupRef.current) return;
-    const rect = gl.domElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
-      setIsHovered(prev => { if (prev && onHover) onHover(false); return false; });
-      return;
-    }
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(
-      new THREE.Vector2((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1),
-      camera
-    );
-    const hit = raycaster.intersectObjects(groupRef.current.children, true).length > 0;
-    setIsHovered(prev => { if (prev !== hit && onHover) onHover(hit); return hit; });
-  }, [camera, gl.domElement, onHover]);
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => {
+      if (!groupRef.current) return;
+      const rect = gl.domElement.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+        setIsHovered((prev) => {
+          if (prev && onHover) onHover(false);
+          return false;
+        });
+        return;
+      }
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(
+        new THREE.Vector2((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1),
+        camera
+      );
+      const hit = raycaster.intersectObjects(groupRef.current.children, true).length > 0;
+      setIsHovered((prev) => {
+        if (prev !== hit && onHover) onHover(hit);
+        return hit;
+      });
+    },
+    [camera, gl.domElement, onHover]
+  );
 
   useEffect(() => {
-    gl.domElement.addEventListener('mousemove', handleMouseMove);
-    return () => gl.domElement.removeEventListener('mousemove', handleMouseMove);
+    const domElement = gl.domElement;
+    domElement.addEventListener("mousemove", handleMouseMove);
+    return () => domElement.removeEventListener("mousemove", handleMouseMove);
   }, [gl.domElement, handleMouseMove]);
 
   return (
@@ -193,13 +244,11 @@ function CodeIcon3D({
   );
 }
 
-type InteractiveCodeIconProps = Omit<CodeIcon3DProps, 'onHover'> & {
-  width?: string | number;
-  height?: string | number;
-  background?: string;
-  enableZoom?: boolean;
-  enableEnvironment?: boolean;
-  resetOnRelease?: boolean;
+type OrbitControlsLike = {
+  getPolarAngle: () => number;
+  setPolarAngle: (a: number) => void;
+  setAzimuthalAngle: (a: number) => void;
+  update: () => void;
 };
 
 type ControlsResetState = { active: boolean; targetPolar: number; targetAzimuth: number };
@@ -208,7 +257,7 @@ function ControlsResetter({
   controlsRef,
   resetStateRef,
 }: {
-  controlsRef: React.MutableRefObject<any>;
+  controlsRef: React.MutableRefObject<OrbitControlsLike | null>;
   resetStateRef: React.MutableRefObject<ControlsResetState>;
 }) {
   useFrame((_, delta) => {
@@ -226,38 +275,144 @@ function ControlsResetter({
   return null;
 }
 
+export function StaticCodeFallback({
+  color = "#b46004",
+  height = 250,
+}: {
+  color?: string;
+  height?: number | string;
+}) {
+  return (
+    <div
+      className="flex items-center justify-center w-full"
+      style={{ height }}
+      aria-label="Code icon"
+    >
+      <div className="relative flex items-center justify-center p-6 rounded-2xl border border-segment/40 bg-surface-secondary/40 shadow-inner">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 16 16"
+          className="w-20 h-20 drop-shadow-[0_0_16px_rgba(180,96,4,0.5)] transition-transform hover:scale-105"
+          fill="none"
+        >
+          <path
+            fill={color}
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M10.218 3.216a.75.75 0 0 0-1.436-.431l-3 10a.75.75 0 0 0 1.436.43zM4.53 4.97a.75.75 0 0 1 0 1.06L2.56 8l1.97 1.97a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0m6.94 6.06a.75.75 0 0 1 0-1.06L13.44 8l-1.97-1.97a.75.75 0 0 1 1.06-1.06l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function detectWebGL(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      window.WebGLRenderingContext &&
+      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
+    const supported = !!gl;
+    if (gl) {
+      const ext = (gl as WebGLRenderingContext).getExtension("WEBGL_lose_context");
+      ext?.loseContext();
+    }
+    return supported;
+  } catch {
+    return false;
+  }
+}
+
+const emptySubscribe = () => () => {};
+const getSnapshotTrue = () => true;
+const getSnapshotFalse = () => false;
+
+function useIsClient() {
+  return useSyncExternalStore(emptySubscribe, getSnapshotTrue, getSnapshotFalse);
+}
+
+function useCanRender3D() {
+  const isClient = useIsClient();
+  return useSyncExternalStore(
+    (callback) => {
+      if (typeof window === "undefined") return () => {};
+      const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mql.addEventListener("change", callback);
+      return () => mql.removeEventListener("change", callback);
+    },
+    () => {
+      if (!isClient) return false;
+      const hasWebGL = detectWebGL();
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      return hasWebGL && !prefersReducedMotion;
+    },
+    () => false
+  );
+}
+
+type InteractiveCodeIconProps = Omit<CodeIcon3DProps, "onHover"> & {
+  width?: string | number;
+  height?: string | number;
+  background?: string;
+  enableZoom?: boolean;
+  enableEnvironment?: boolean;
+  resetOnRelease?: boolean;
+};
+
+class WebGLErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.warn("3D WebGL render fallback triggered:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 export default function InteractiveCodeIcon({
-  width = '100%',
-  height = '100vh',
-  background = '#0f172a',
+  width = "100%",
+  height = "100%",
+  background = "transparent",
   enableZoom = false,
-  enableEnvironment = true,
   resetOnRelease = true,
+  color = "#b46004",
   ...props
 }: InteractiveCodeIconProps) {
   const [isInteracting, setIsInteracting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [resetCounter, setResetCounter] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
-  const controlsRef = useRef<any>(null);
+  const [contextLost, setContextLost] = useState(false);
+  const canRender3D = useCanRender3D();
+  const controlsRef = useRef<OrbitControlsLike | null>(null);
   const initialPolarRef = useRef<number | null>(null);
   const resetStateRef = useRef<ControlsResetState>({ active: false, targetPolar: 0, targetAzimuth: 0 });
 
   const stableId = useId();
 
-  // Only render Canvas on client after mount to avoid SSR/hydration issues
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!controlsRef.current || initialPolarRef.current !== null) return;
-    initialPolarRef.current = controlsRef.current.getPolarAngle();
-  }, []);
+  if (!canRender3D || contextLost) {
+    return <StaticCodeFallback color={color} height={height} />;
+  }
 
   return (
-    <div style={{ width, height, background, position: 'relative' }}>
-      {isMounted && (
+    <div style={{ width, height, background, position: "relative" }}>
+      <WebGLErrorBoundary fallback={<StaticCodeFallback color={color} height={height} />}>
         <Canvas
           key={stableId}
           camera={{ position: [0, 0, 4.5], fov: 45 }}
@@ -265,70 +420,86 @@ export default function InteractiveCodeIcon({
           gl={{
             antialias: true,
             alpha: true,
-            powerPreference: 'high-performance',
+            powerPreference: "default",
             preserveDrawingBuffer: false,
+            failIfMajorPerformanceCaveat: false,
           }}
           onCreated={({ gl }) => {
-            gl.setPixelRatio(Math.min(window.devicePixelRatio ?? 1, 2));
+            gl.domElement.addEventListener("webglcontextlost", (event) => {
+              event.preventDefault();
+              console.warn("WebGL context lost on 3D canvas; rendering static fallback");
+              setContextLost(true);
+            });
+            gl.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1, 2));
             gl.shadowMap.enabled = true;
             gl.shadowMap.type = THREE.PCFSoftShadowMap;
             gl.toneMapping = THREE.ACESFilmicToneMapping;
             gl.toneMappingExposure = 1.2;
           }}
         >
-          <ambientLight intensity={0.3} />
-          <directionalLight position={[6, 6, 6]} intensity={1.6} castShadow />
-          <directionalLight position={[-6, -3, 4]} intensity={0.6} color="#7c3aed" />
-          <pointLight position={[-4, -3, 4]} intensity={0.7} color="#06b6d4" />
-          <pointLight position={[4, 3, -4]} intensity={0.7} color="#f59e0b" />
-          {enableEnvironment && <Environment preset="city" />}
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[6, 6, 6]} intensity={1.8} castShadow />
+          <directionalLight position={[-6, -3, 4]} intensity={0.8} color="#7c3aed" />
+          <pointLight position={[-4, -3, 4]} intensity={0.8} color="#06b6d4" />
+          <pointLight position={[4, 3, -4]} intensity={0.8} color="#f59e0b" />
 
-          <CodeIcon3D
-            {...props}
-            isInteracting={isInteracting}
-            resetOnRelease={resetOnRelease}
-            resetRotationTrigger={resetCounter}
-            onHover={setIsHovered}
-          />
+          <React.Suspense fallback={null}>
+            <CodeIcon3D
+              {...props}
+              color={color}
+              isInteracting={isInteracting}
+              resetOnRelease={resetOnRelease}
+              resetRotationTrigger={resetCounter}
+              onHover={setIsHovered}
+            />
 
-          <OrbitControls
-            ref={controlsRef}
-            enableZoom={enableZoom}
-            enablePan={false}
-            dampingFactor={0.05}
-            enableDamping={true}
-            autoRotate={false}
-            onStart={() => setIsInteracting(true)}
-            onEnd={() => {
-              setIsInteracting(false);
-              if (resetOnRelease) {
-                setResetCounter(prev => prev + 1);
-                if (controlsRef.current) {
-                  resetStateRef.current = {
-                    active: true,
-                    targetPolar: initialPolarRef.current ?? Math.PI / 2,
-                    targetAzimuth: 0,
-                  };
+            <OrbitControls
+              ref={(ref) => {
+                controlsRef.current = ref as unknown as OrbitControlsLike;
+                if (ref && initialPolarRef.current === null) {
+                  initialPolarRef.current = (ref as unknown as OrbitControlsLike).getPolarAngle();
                 }
-              }
-            }}
-          />
+              }}
+              enableZoom={enableZoom}
+              enablePan={false}
+              dampingFactor={0.05}
+              enableDamping={true}
+              autoRotate={false}
+              onStart={() => setIsInteracting(true)}
+              onEnd={() => {
+                setIsInteracting(false);
+                if (resetOnRelease) {
+                  setResetCounter((prev) => prev + 1);
+                  if (controlsRef.current) {
+                    resetStateRef.current = {
+                      active: true,
+                      targetPolar: initialPolarRef.current ?? Math.PI / 2,
+                      targetAzimuth: 0,
+                    };
+                  }
+                }
+              }}
+            />
 
-          <ControlsResetter controlsRef={controlsRef} resetStateRef={resetStateRef} />
+            <ControlsResetter controlsRef={controlsRef} resetStateRef={resetStateRef} />
+          </React.Suspense>
         </Canvas>
-      )}
+      </WebGLErrorBoundary>
 
       {isHovered && !isInteracting && (
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          color: '#94a3b8',
-          pointerEvents: 'none',
-          opacity: 0.8,
-        }} className="w-full text-xs text-center">
-          Code with <span className="text-accent">Caffeine</span>
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "#94a3b8",
+            pointerEvents: "none",
+            opacity: 0.8,
+          }}
+          className="w-full text-xs text-center font-mono"
+        >
+          Interactive <span className="text-accent">&lt;/&gt;</span>
         </div>
       )}
     </div>

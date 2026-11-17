@@ -17,7 +17,23 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "A portfolio site",
   description: "A simple portfolio site built with Next.js by @souvikkarmkar",
-  keywords: ["portfolio", "next.js", "react", "souvikkarmkar","ai", "artificial intelligence", "machine learning", "deep learning", "data science", "python", "javascript", "typescript", "web development", "software engineering","ai enthousiast",],
+  keywords: [
+    "portfolio",
+    "next.js",
+    "react",
+    "souvikkarmkar",
+    "ai",
+    "artificial intelligence",
+    "machine learning",
+    "deep learning",
+    "data science",
+    "python",
+    "javascript",
+    "typescript",
+    "web development",
+    "software engineering",
+    "ai enthousiast",
+  ],
 };
 
 export default function RootLayout({
@@ -30,9 +46,7 @@ export default function RootLayout({
       lang="en"
       className={`${spaceMono.variable} ${plexMono.variable} h-full antialiased dark`}
     >
-      <body className="flex flex-col min-h-dvh w-full">
-          {children}
-      </body>
+      <body className="flex flex-col min-h-dvh w-full">{children}</body>
     </html>
   );
 }

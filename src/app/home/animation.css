@@ -1,28 +1,27 @@
-/* Slide OUT — old page exits left */
+/* Smooth subtle content crossfade */
 ::view-transition-old(.slide-page) {
-  animation: 350ms cubic-bezier(0.4, 0, 1, 1) both slide-out;
+  animation: 160ms cubic-bezier(0.4, 0, 1, 1) both content-fade-out;
 }
 
-/* Slide IN — new page enters from right */
 ::view-transition-new(.slide-page) {
-  animation: 400ms cubic-bezier(0, 0, 0.2, 1) 30ms both slide-in;
+  animation: 200ms cubic-bezier(0.16, 1, 0.3, 1) both content-fade-in;
 }
 
-@keyframes slide-out {
+@keyframes content-fade-out {
   from {
     opacity: 1;
     transform: translateY(0);
   }
   to {
     opacity: 0;
-    transform: translateY(40px);
+    transform: translateY(-6px);
   }
 }
 
-@keyframes slide-in {
+@keyframes content-fade-in {
   from {
     opacity: 0;
-    transform: translateY(-40px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -30,15 +29,15 @@
   }
 }
 
-/* Group: let it cover full area cleanly */
 ::view-transition-group(.slide-page) {
   overflow: hidden;
 }
 
-/* Sidebar/background must NEVER transition */
+/* Ensure shell header, footer, background never transition */
 .fixed,
-.col-span-1,
-.dot-grid,
+header,
+footer,
+aside,
 [data-static] {
   view-transition-name: none !important;
 }
