@@ -282,7 +282,19 @@ const DotGrid = ({
     gl.vertexAttribDivisor(2, 1);
     gl.bindVertexArray(null);
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const motionMql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      reduced = e.matches;
+      if (reduced) {
+        offset.fill(0);
+        velocity.fill(0);
+        next.fill(0);
+        energy.fill(0);
+      }
+      wake();
+    };
+    motionMql.addEventListener('change', handleMotionChange);
     const view = { width: 0, height: 0, left: 0, top: 0, ratio: 1 };
     const grid = { count: 0, cols: 1, rows: 1, cell: 1, centerX: 0, centerY: 0, reach: 1 };
     let rest = new Float32Array(0);
@@ -370,7 +382,7 @@ const DotGrid = ({
       const coupling = (Math.max(0, s.tension) * 900) ** 2 / (grid.cell * grid.cell);
       const viscosity = Math.sqrt(coupling) * 0.06;
       const limit = Math.sqrt(stiffness + 8 * coupling) + damping + 8 * viscosity;
-      const steps = Math.min(24, Math.max(1, Math.ceil(dt / Math.min(1 / 120, 1.2 / limit))));
+      const steps = coupling > 0 ? Math.min(3, Math.max(1, Math.ceil(dt / Math.min(1 / 120, 1.2 / limit)))) : 1;
       const h = dt / steps;
       for (let i = 0; i < grid.count; i++) {
         const index = i * 2;
@@ -381,13 +393,15 @@ const DotGrid = ({
         if (drive > 0) {
           const ex = rx + offset[index] - pointer.x;
           const ey = ry + offset[index + 1] - pointer.y;
-          const distance = Math.hypot(ex, ey);
-          if (distance < radius) {
-            const weight = smootherstep(1 - distance / radius) * drive;
-            const nx = distance > 0.001 ? ex / distance : 0;
-            const ny = distance > 0.001 ? ey / distance : 0;
-            ax += weight * (dirX + nx * 0.6);
-            ay += weight * (dirY + ny * 0.6);
+          if (Math.abs(ex) < radius && Math.abs(ey) < radius) {
+            const distance = Math.hypot(ex, ey);
+            if (distance < radius) {
+              const weight = smootherstep(1 - distance / radius) * drive;
+              const nx = distance > 0.001 ? ex / distance : 0;
+              const ny = distance > 0.001 ? ey / distance : 0;
+              ax += weight * (dirX + nx * 0.6);
+              ay += weight * (dirY + ny * 0.6);
+            }
           }
         }
         let wx = 0;
@@ -503,9 +517,13 @@ const DotGrid = ({
         const y = rest[index + 1] + offset[index + 1] + wave[source + 1];
         let glowing = energy[i];
         if (pointer.presence > 0.001) {
-          const distance = Math.hypot(x - pointer.x, y - pointer.y);
-          if (distance < radius)
-            glowing = Math.max(glowing, smootherstep(1 - distance / radius) * 0.4 * pointer.presence);
+          const dx = Math.abs(x - pointer.x);
+          const dy = Math.abs(y - pointer.y);
+          if (dx < radius && dy < radius) {
+            const distance = Math.hypot(dx, dy);
+            if (distance < radius)
+              glowing = Math.max(glowing, smootherstep(1 - distance / radius) * 0.4 * pointer.presence);
+          }
         }
         let scale = 1;
         if (introStart !== null) {
@@ -579,11 +597,14 @@ const DotGrid = ({
       raf = requestAnimationFrame(frame);
     };
 
-    const locate = (event: PointerEvent): [number, number] => {
+    const updateBounds = () => {
       const rect = canvas.getBoundingClientRect();
       view.left = rect.left;
       view.top = rect.top;
-      return [event.clientX - rect.left, event.clientY - rect.top];
+    };
+
+    const locate = (event: PointerEvent): [number, number] => {
+      return [event.clientX - view.left, event.clientY - view.top];
     };
 
     const onMove = (event: PointerEvent) => {
@@ -633,6 +654,7 @@ const DotGrid = ({
     window.addEventListener('pointerdown', onDown, { passive: true });
     window.addEventListener('pointerout', onOut);
     window.addEventListener('blur', onLeave);
+    window.addEventListener('scroll', updateBounds, { passive: true });
 
     const resizeObserver = new ResizeObserver(() => {
       resize();
@@ -672,6 +694,7 @@ const DotGrid = ({
     };
 
     return () => {
+      motionMql.removeEventListener('change', handleMotionChange);
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
       visibilityObserver.disconnect();
@@ -679,6 +702,7 @@ const DotGrid = ({
       window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointerout', onOut);
       window.removeEventListener('blur', onLeave);
+      window.removeEventListener('scroll', updateBounds);
       document.removeEventListener('visibilitychange', onVisibility);
       gl.deleteBuffer(cornerBuffer);
       gl.deleteBuffer(instanceBuffer);

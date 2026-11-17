@@ -1,6 +1,6 @@
 "use client";
 
-import { StaticCodeFallback } from "@/components/3DCode";
+import { StaticCodeFallback } from "@/components/StaticCodeFallback";
 
 export default function Loading() {
   return (

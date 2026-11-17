@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useMemo, useRef, useState, useEffect, useCallback, useId, useSyncExternalStore } from "react";
+import React, { useMemo, useRef, useState, useEffect, useId, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import * as THREE from "three";
+import { StaticCodeFallback } from "./StaticCodeFallback";
+
+export { StaticCodeFallback };
 
 const SVG_STRING = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M10.218 3.216a.75.75 0 0 0-1.436-.431l-3 10a.75.75 0 0 0 1.436.43zM4.53 4.97a.75.75 0 0 1 0 1.06L2.56 8l1.97 1.97a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0m6.94 6.06a.75.75 0 0 1 0-1.06L13.44 8l-1.97-1.97a.75.75 0 0 1 1.06-1.06l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0" clip-rule="evenodd"/></svg>`;
 
@@ -57,8 +60,8 @@ const buildMaterial = (
         color,
         emissive: emissiveColor,
         emissiveIntensity: 0.16,
-        metalness: metalness || 0.6,
-        roughness: roughness || 0.1,
+        metalness: metalness ?? 0.6,
+        roughness: roughness ?? 0.1,
         clearcoat: 1,
         clearcoatRoughness: 0.05,
         side: THREE.DoubleSide,
@@ -68,8 +71,8 @@ const buildMaterial = (
         color,
         emissive: emissiveColor,
         emissiveIntensity: 0.18,
-        metalness: metalness || 1,
-        roughness: roughness || 0.15,
+        metalness: metalness ?? 1,
+        roughness: roughness ?? 0.15,
         clearcoat: 0.6,
         clearcoatRoughness: 0.08,
         side: THREE.DoubleSide,
@@ -79,8 +82,8 @@ const buildMaterial = (
         color,
         emissive: emissiveColor,
         emissiveIntensity: 0.1,
-        metalness: metalness * 0.4 || 0.2,
-        roughness: roughness || 0.45,
+        metalness: metalness !== undefined ? metalness * 0.4 : 0.2,
+        roughness: roughness ?? 0.45,
         side: THREE.DoubleSide,
       });
     case "clay":
@@ -89,8 +92,8 @@ const buildMaterial = (
         color,
         emissive: emissiveColor,
         emissiveIntensity: 0.08,
-        metalness: metalness * 0.2 || 0.1,
-        roughness: roughness || 0.85,
+        metalness: metalness !== undefined ? metalness * 0.2 : 0.1,
+        roughness: roughness ?? 0.85,
         side: THREE.DoubleSide,
       });
   }
@@ -117,7 +120,6 @@ function CodeIcon3D({
 }: CodeIcon3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const { camera, gl } = useThree();
   const resetToOrigin = useRef(false);
   const lastResetTrigger = useRef<number | undefined>(undefined);
 
@@ -141,8 +143,6 @@ function CodeIcon3D({
           geometry,
           buildMaterial(materialType, color, emissiveColor, metalness, roughness)
         );
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
         meshes.push(mesh);
       });
     });
@@ -180,20 +180,30 @@ function CodeIcon3D({
     };
   }, [iconGroup]);
 
+  const { invalidate } = useThree();
+
   useEffect(() => {
     if (!resetOnRelease || resetRotationTrigger === undefined) return;
     if (resetRotationTrigger === lastResetTrigger.current) return;
     lastResetTrigger.current = resetRotationTrigger;
     resetToOrigin.current = true;
-  }, [resetOnRelease, resetRotationTrigger]);
+    invalidate();
+  }, [resetOnRelease, resetRotationTrigger, invalidate]);
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
     if (resetToOrigin.current && !isInteracting) {
       groupRef.current.rotation.x = THREE.MathUtils.damp(groupRef.current.rotation.x, 0, 3.5, delta);
       groupRef.current.rotation.z = THREE.MathUtils.damp(groupRef.current.rotation.z, 0, 3.5, delta);
-      if (Math.abs(groupRef.current.rotation.x) < 0.001 && Math.abs(groupRef.current.rotation.z) < 0.001) {
+      groupRef.current.rotation.y = THREE.MathUtils.damp(groupRef.current.rotation.y, 0, 3.5, delta);
+      invalidate();
+      if (
+        Math.abs(groupRef.current.rotation.x) < 0.001 &&
+        Math.abs(groupRef.current.rotation.z) < 0.001 &&
+        Math.abs(groupRef.current.rotation.y) < 0.001
+      ) {
         groupRef.current.rotation.x = 0;
+        groupRef.current.rotation.y = 0;
         groupRef.current.rotation.z = 0;
         resetToOrigin.current = false;
       }
@@ -201,44 +211,22 @@ function CodeIcon3D({
     }
     if (autoRotate && !isInteracting && !(pauseOnHover && isHovered)) {
       groupRef.current.rotation.y += delta * rotationSpeed;
+      invalidate();
     }
   });
 
-  const handleMouseMove = useCallback(
-    (event: MouseEvent) => {
-      if (!groupRef.current) return;
-      const rect = gl.domElement.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
-        setIsHovered((prev) => {
-          if (prev && onHover) onHover(false);
-          return false;
-        });
-        return;
-      }
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(
-        new THREE.Vector2((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1),
-        camera
-      );
-      const hit = raycaster.intersectObjects(groupRef.current.children, true).length > 0;
-      setIsHovered((prev) => {
-        if (prev !== hit && onHover) onHover(hit);
-        return hit;
-      });
-    },
-    [camera, gl.domElement, onHover]
-  );
-
-  useEffect(() => {
-    const domElement = gl.domElement;
-    domElement.addEventListener("mousemove", handleMouseMove);
-    return () => domElement.removeEventListener("mousemove", handleMouseMove);
-  }, [gl.domElement, handleMouseMove]);
-
   return (
-    <group ref={groupRef}>
+    <group
+      ref={groupRef}
+      onPointerEnter={() => {
+        setIsHovered(true);
+        if (onHover) onHover(true);
+      }}
+      onPointerLeave={() => {
+        setIsHovered(false);
+        if (onHover) onHover(false);
+      }}
+    >
       <primitive object={iconGroup} />
     </group>
   );
@@ -275,52 +263,22 @@ function ControlsResetter({
   return null;
 }
 
-export function StaticCodeFallback({
-  color = "#b46004",
-  height = 250,
-}: {
-  color?: string;
-  height?: number | string;
-}) {
-  return (
-    <div
-      className="flex items-center justify-center w-full"
-      style={{ height }}
-      aria-label="Code icon"
-    >
-      <div className="relative flex items-center justify-center p-6 rounded-2xl border border-segment/40 bg-surface-secondary/40 shadow-inner">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 16 16"
-          className="w-20 h-20 drop-shadow-[0_0_16px_rgba(180,96,4,0.5)] transition-transform hover:scale-105"
-          fill="none"
-        >
-          <path
-            fill={color}
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M10.218 3.216a.75.75 0 0 0-1.436-.431l-3 10a.75.75 0 0 0 1.436.43zM4.53 4.97a.75.75 0 0 1 0 1.06L2.56 8l1.97 1.97a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0m6.94 6.06a.75.75 0 0 1 0-1.06L13.44 8l-1.97-1.97a.75.75 0 0 1 1.06-1.06l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0"
-          />
-        </svg>
-      </div>
-    </div>
-  );
-}
+let cachedWebGL2Support: boolean | null = null;
 
-function detectWebGL(): boolean {
+function checkWebGL2Support(): boolean {
   if (typeof window === "undefined") return false;
+  if (cachedWebGL2Support !== null) return cachedWebGL2Support;
   try {
     const canvas = document.createElement("canvas");
-    const gl =
-      window.WebGLRenderingContext &&
-      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
-    const supported = !!gl;
+    const gl = !!(window.WebGL2RenderingContext && canvas.getContext("webgl2"));
     if (gl) {
-      const ext = (gl as WebGLRenderingContext).getExtension("WEBGL_lose_context");
-      ext?.loseContext();
+      const ctx = canvas.getContext("webgl2");
+      ctx?.getExtension("WEBGL_lose_context")?.loseContext();
     }
-    return supported;
+    cachedWebGL2Support = gl;
+    return gl;
   } catch {
+    cachedWebGL2Support = false;
     return false;
   }
 }
@@ -344,9 +302,9 @@ function useCanRender3D() {
     },
     () => {
       if (!isClient) return false;
-      const hasWebGL = detectWebGL();
+      const hasWebGL2 = checkWebGL2Support();
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      return hasWebGL && !prefersReducedMotion;
+      return hasWebGL2 && !prefersReducedMotion;
     },
     () => false
   );
@@ -393,6 +351,7 @@ export default function InteractiveCodeIcon({
   enableZoom = false,
   resetOnRelease = true,
   color = "#b46004",
+  autoRotate = false,
   ...props
 }: InteractiveCodeIconProps) {
   const [isInteracting, setIsInteracting] = useState(false);
@@ -410,13 +369,24 @@ export default function InteractiveCodeIcon({
     return <StaticCodeFallback color={color} height={height} />;
   }
 
+  const handleReset = () => {
+    setResetCounter((prev) => prev + 1);
+    if (controlsRef.current) {
+      resetStateRef.current = {
+        active: true,
+        targetPolar: initialPolarRef.current ?? Math.PI / 2,
+        targetAzimuth: 0,
+      };
+    }
+  };
+
   return (
     <div style={{ width, height, background, position: "relative" }}>
       <WebGLErrorBoundary fallback={<StaticCodeFallback color={color} height={height} />}>
         <Canvas
           key={stableId}
           camera={{ position: [0, 0, 4.5], fov: 45 }}
-          frameloop="always"
+          frameloop={autoRotate ? "always" : "demand"}
           gl={{
             antialias: true,
             alpha: true,
@@ -431,14 +401,13 @@ export default function InteractiveCodeIcon({
               setContextLost(true);
             });
             gl.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1, 2));
-            gl.shadowMap.enabled = true;
-            gl.shadowMap.type = THREE.PCFSoftShadowMap;
+            gl.shadowMap.enabled = false;
             gl.toneMapping = THREE.ACESFilmicToneMapping;
             gl.toneMappingExposure = 1.2;
           }}
         >
           <ambientLight intensity={0.5} />
-          <directionalLight position={[6, 6, 6]} intensity={1.8} castShadow />
+          <directionalLight position={[6, 6, 6]} intensity={1.8} />
           <directionalLight position={[-6, -3, 4]} intensity={0.8} color="#7c3aed" />
           <pointLight position={[-4, -3, 4]} intensity={0.8} color="#06b6d4" />
           <pointLight position={[4, 3, -4]} intensity={0.8} color="#f59e0b" />
@@ -446,6 +415,7 @@ export default function InteractiveCodeIcon({
           <React.Suspense fallback={null}>
             <CodeIcon3D
               {...props}
+              autoRotate={autoRotate}
               color={color}
               isInteracting={isInteracting}
               resetOnRelease={resetOnRelease}
@@ -454,6 +424,7 @@ export default function InteractiveCodeIcon({
             />
 
             <OrbitControls
+              makeDefault
               ref={(ref) => {
                 controlsRef.current = ref as unknown as OrbitControlsLike;
                 if (ref && initialPolarRef.current === null) {
@@ -469,14 +440,7 @@ export default function InteractiveCodeIcon({
               onEnd={() => {
                 setIsInteracting(false);
                 if (resetOnRelease) {
-                  setResetCounter((prev) => prev + 1);
-                  if (controlsRef.current) {
-                    resetStateRef.current = {
-                      active: true,
-                      targetPolar: initialPolarRef.current ?? Math.PI / 2,
-                      targetAzimuth: 0,
-                    };
-                  }
+                  handleReset();
                 }
               }}
             />
@@ -485,6 +449,16 @@ export default function InteractiveCodeIcon({
           </React.Suspense>
         </Canvas>
       </WebGLErrorBoundary>
+
+      <button
+        type="button"
+        onClick={handleReset}
+        className="absolute top-2 right-2 px-2 py-0.5 text-[10px] uppercase font-mono rounded border border-segment/60 bg-surface/80 text-muted hover:text-foreground hover:border-accent transition-colors z-20 focus:outline-none focus:ring-1 focus:ring-accent"
+        aria-label="Reset 3D view orientation"
+        title="Reset 3D view"
+      >
+        Reset
+      </button>
 
       {isHovered && !isInteracting && (
         <div

@@ -9,8 +9,11 @@ export const GITHUB_CONFIG = {
     "readme.md",
     "README",
     "docs/architecture.md",
+    "docs/ARCHITECTURE.md",
+    "docs/atchitecture.md",
     "ARCHITECTURE.md",
     "architecture.md",
+    "architecture",
   ],
   cacheTtlSeconds: {
     profile: 3600,

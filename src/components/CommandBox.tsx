@@ -58,24 +58,23 @@ function CommandBox() {
   };
 
   return (
-    <div className="w-full flex flex-col pt-1">
-
+    <div className="w-full flex flex-col py-1">
       {showError && (
         <div
           role="alert"
-          className="mb-3 text-xs rounded-md bg-danger/15 border border-danger/40 text-danger px-3 py-1.5 w-fit font-mono"
+          className="mb-2.5 text-xs rounded-md bg-danger/15 border border-danger/40 text-danger px-3 py-1.5 w-fit font-mono"
         >
           Command &quot;{trimmedValue}&quot; not found. Available: {COMMANDS.join(", ")}
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-ui">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] font-mono py-0.5">
         {/* Terminal Input */}
         <div className="flex items-center min-w-0 flex-1">
           <label htmlFor="terminal-nav-input" className="sr-only">
             Terminal command navigation
           </label>
-          <span className="text-field-placeholder font-bold shrink-0 select-none mr-2 text-ui font-mono">
+          <span className="text-field-placeholder font-bold shrink-0 select-none mr-2 text-[11px] font-mono">
             souvik@portfolio:$
           </span>
           <div className="relative flex-1 min-w-0">
@@ -84,7 +83,7 @@ function CommandBox() {
               type="text"
               autoComplete="off"
               spellCheck={false}
-              className="w-full relative z-10 bg-transparent text-command placeholder:text-muted/60 focus:outline-none text-ui font-mono"
+              className="w-full relative z-10 bg-transparent text-command placeholder:text-muted/60 focus:outline-none text-[11px] font-mono py-1 leading-normal"
               placeholder="type command (e.g. skills)..."
               value={commandValue}
               onChange={(event) => {
@@ -112,7 +111,7 @@ function CommandBox() {
             {showSuggestion && (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 z-0 flex items-center text-command/40 text-ui font-mono"
+                className="pointer-events-none absolute inset-0 z-0 flex items-center text-command/40 text-[11px] font-mono"
               >
                 <span className="opacity-0">{commandValue}</span>
                 <span>{suggestionTail}</span>
@@ -130,10 +129,10 @@ function CommandBox() {
                 key={tag}
                 href={getCommandRoute(tag)}
                 aria-current={isActive ? "page" : undefined}
-                className={`rounded-md px-2.5 py-1 text-ui transition-colors focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 min-h-[30px] inline-flex items-center justify-center font-mono ${
+                className={`rounded px-2.5 py-0.5 text-[10px] sm:text-[11px] transition-all font-mono min-h-[24px] inline-flex items-center justify-center ${
                   isActive
-                    ? "border border-accent text-accent bg-accent/15 font-semibold"
-                    : "border border-segment/70 text-muted hover:text-foreground hover:border-foreground"
+                    ? "border border-accent text-accent bg-accent/20 font-semibold shadow-[0_0_8px_rgba(180,96,4,0.25)]"
+                    : "border border-white/10 text-muted hover:text-foreground hover:border-white/30 hover:bg-white/[0.04]"
                 }`}
               >
                 {tag}

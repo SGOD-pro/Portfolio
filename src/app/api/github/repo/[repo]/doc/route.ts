@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRepositoryDocument } from "@/lib/github/api";
+import { getRepositoryDocument, getArchitectureDocument } from "@/lib/github/api";
 import { GITHUB_CONFIG } from "@/lib/github/config";
 import { GitHubApiError } from "@/lib/github/client";
 
@@ -13,7 +13,10 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const docPath = searchParams.get("path") || "README.md";
 
-    const data = await getRepositoryDocument(owner, repo, docPath);
+    const data =
+      docPath.toLowerCase() === "architecture" || docPath.toLowerCase() === "architecture.md"
+        ? await getArchitectureDocument(owner, repo)
+        : await getRepositoryDocument(owner, repo, docPath);
 
     return NextResponse.json(data, {
       headers: {

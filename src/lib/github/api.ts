@@ -465,6 +465,51 @@ export async function getRepositoryDocument(
   }
 }
 
+// 5b. Architecture Document Discovery
+export const ARCHITECTURE_CANDIDATE_PATHS = [
+  "architecture.md",
+  "docs/architecture.md",
+  "docs/atchitecture.md",
+] as const;
+
+export async function getArchitectureDocument(
+  owner: string,
+  repo: string,
+  options?: { customFetch?: typeof fetch }
+): Promise<{ document: GitHubDocument; isStale: boolean; fetchedAt: string }> {
+  if (!isValidRepoIdentifier(owner, repo)) {
+    throw new GitHubApiError(`Invalid repository identifier: ${owner}/${repo}`, 400);
+  }
+
+  const cacheKey = `doc:${owner}/${repo}:architecture`;
+  const cached = githubCache.get<GitHubDocument>(cacheKey);
+
+  let lastError: Error | null = null;
+  for (const candidate of ARCHITECTURE_CANDIDATE_PATHS) {
+    try {
+      const result = await getRepositoryDocument(owner, repo, candidate, options);
+      githubCache.set(cacheKey, result.document, GITHUB_CONFIG.cacheTtlSeconds.document);
+      return result;
+    } catch (err: unknown) {
+      if (err instanceof GitHubApiError && err.statusCode === 404) {
+        lastError = err;
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (cached) {
+    return {
+      document: cached.data,
+      isStale: true,
+      fetchedAt: cached.fetchedAt,
+    };
+  }
+
+  throw lastError || new GitHubApiError("Architecture document not found", 404);
+}
+
 // 6. Recent Activity
 export async function getRecentActivity(
   username: string = GITHUB_CONFIG.username,

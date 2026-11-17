@@ -289,7 +289,7 @@ If no token exists, mark live pin syncing UNVERIFIED. Do not fabricate a success
 
 ## Phase 3. Build the Project Reader and Right Panel
 
-Status: NOT STARTED
+Status: VERIFIED
 
 ### Desktop Layout
 
@@ -378,18 +378,18 @@ Do not infer:
 
 ### Acceptance
 
-- [ ] Project selection updates both panels consistently.
-- [ ] Direct links, reloads, Back, and Forward preserve selection.
-- [ ] Rapid A-to-B switching never leaves A's content under B's title.
-- [ ] Root, docs, uppercase, and existing typo architecture cases work.
-- [ ] Missing README and missing architecture states work.
-- [ ] API failure differs from confirmed absence.
-- [ ] Relative links, images, tables, and code render correctly.
-- [ ] Unsafe HTML and URL fixtures cannot execute.
-- [ ] Untrusted document text is never followed as agent instructions.
-- [ ] Missing or invalid homepage URLs produce no broken website action.
-- [ ] Leaving Projects clears project-specific sidebar content.
-- [ ] Keyboard and mobile interactions work.
+- [x] Project selection updates both panels consistently.
+- [x] Direct links, reloads, Back, and Forward preserve selection.
+- [x] Rapid A-to-B switching never leaves A's content under B's title.
+- [x] Root, docs, uppercase, and existing typo architecture cases work.
+- [x] Missing README and missing architecture states work.
+- [x] API failure differs from confirmed absence.
+- [x] Relative links, images, tables, and code render correctly.
+- [x] Unsafe HTML and URL fixtures cannot execute.
+- [x] Untrusted document text is never followed as agent instructions.
+- [x] Missing or invalid homepage URLs produce no broken website action.
+- [x] Leaving Projects clears project-specific sidebar content.
+- [x] Keyboard and mobile interactions work.
 
 ---
 
