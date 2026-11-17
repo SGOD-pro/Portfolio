@@ -97,7 +97,7 @@ function HomeLayout({
       >
         <DotGrid
           onFrame={handleDotFrame}
-          dotSize={3}
+          dotSize={4}
           gap={20}
           baseColor="#383838"
           activeColor="#b46004"
@@ -110,9 +110,9 @@ function HomeLayout({
       </div>
 
       {/* Main Full-Page Shell */}
-      <main className="flex-1 w-full p-2.5 sm:p-3 md:p-4 flex flex-col lg:flex-row gap-3 md:gap-4 relative z-10 lg:h-full lg:max-h-full lg:overflow-hidden pb-32 sm:pb-36 lg:pb-4">
+      <main className="flex-1 w-full p-2 sm:p-3 md:p-4 flex flex-col lg:flex-row gap-3 md:gap-4 relative z-10 lg:h-full lg:max-h-full lg:overflow-hidden pb-36 sm:pb-40 lg:pb-4">
         {/* Left Panel: Consistent Shell (Header + Content + CommandBox Footer) */}
-        <section className="flex-1 flex flex-col min-w-0 min-h-[500px] lg:h-full lg:overflow-hidden">
+        <section className="flex-1 flex flex-col min-w-0 min-h-[500px] lg:h-full lg:overflow-hidden relative z-40 lg:z-auto">
           <GlassSurface
             ref={mainGlassRef}
             backdrop={sceneCanvas ?? undefined}
@@ -125,11 +125,11 @@ function HomeLayout({
             bevel={0.65}
             dispersion={0.12}
             reflection={1}
-            frost={0.04}
+            frost={0.2}
             shine={0.75}
             tint="#ffffff"
             tintOpacity={0.04}
-            className="w-full h-full flex flex-col p-4 sm:p-5 lg:p-6 overflow-hidden"
+            className="w-full h-full flex flex-col p-4 sm:p-5 lg:p-6 lg:overflow-hidden"
           >
             {/* 1. Consistent Shell Header (Mac dots + title on all pages) */}
             <header className="flex items-center justify-between border-b border-white/10 pb-2.5 shrink-0">
@@ -156,14 +156,14 @@ function HomeLayout({
             </div>
 
             {/* 3. Consistent Shell Footer (Search / Nav CommandBox) - Fixed with Glass + Frost on Mobile */}
-            <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#0a0a0a]/85 backdrop-blur-xl border-t border-white/15 px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_-8px_32px_rgba(0,0,0,0.75)] lg:static lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:border-t lg:border-white/10 lg:pt-3 lg:pb-2 lg:px-0 lg:shadow-none shrink-0">
+            <footer className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-2xl border-t border-white/20 px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] lg:static lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:border-t lg:border-white/10 lg:pt-3 lg:pb-2 lg:px-0 lg:shadow-none shrink-0">
               <CommandBox />
             </footer>
           </GlassSurface>
         </section>
 
         {/* Right Panel: Sidebar (3D Logo + Connect Links) */}
-        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-6 lg:mb-0">
+        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-8 lg:mb-0 relative -z-10 lg:z-auto">
           <GlassSurface
             ref={sidebarGlassRef}
             backdrop={sceneCanvas ?? undefined}

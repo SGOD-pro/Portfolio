@@ -154,7 +154,7 @@ const compile = (gl: WebGL2RenderingContext, type: number, source: string) => {
 
 const DotGrid = ({
   dotSize = 5,
-  gap = 18,
+  gap = 16,
   baseColor = '#3a3446',
   activeColor = '#ffffff',
   proximity = 140,

@@ -759,10 +759,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
             pointerEvents: "none",
             borderRadius: "inherit",
             boxShadow: `inset 0 0 0 ${effectOn && status === "webgl" ? 0 : limit(borderWidth, 0, 4)}px rgba(255,255,255,${limit(borderOpacity, 0, 1)})`,
-            background:
-              !solid && (!effectOn || status !== "webgl")
-                ? `linear-gradient(${shineAngle}deg,rgba(255,255,255,${limit(shine, 0, 1) * 0.08}),transparent 55%)`
-                : undefined,
+            
           }}
         />
         {children}
