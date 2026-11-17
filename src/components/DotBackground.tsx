@@ -118,6 +118,7 @@ interface DotGridProps {
   dpr?: number;
   className?: string;
   style?: CSSProperties;
+  onFrame?: (canvas: HTMLCanvasElement) => void;
 }
 
 interface Shock {
@@ -175,9 +176,15 @@ const DotGrid = ({
   paused = false,
   dpr,
   className = '',
-  style
+  style,
+  onFrame,
 }: DotGridProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onFrameRef = useRef(onFrame);
+
+  useEffect(() => {
+    onFrameRef.current = onFrame;
+  }, [onFrame]);
   const engineRef = useRef<{ rebuild: () => void; refresh: () => void } | null>(null);
   const settings = {
     dotSize,
@@ -237,6 +244,7 @@ const DotGrid = ({
           }
         }
         ctx.restore();
+        onFrameRef.current?.(canvas);
       };
       draw2D();
       window.addEventListener('resize', draw2D);
@@ -563,6 +571,7 @@ const DotGrid = ({
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, instances);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, grid.count);
       gl.bindVertexArray(null);
+      onFrameRef.current?.(canvas);
     };
 
     const settled = (now: number) => {

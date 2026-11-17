@@ -8,6 +8,7 @@ export interface GitHubProfile {
   followers: number;
   following: number;
   createdAt: string;
+  totalContributions?: number;
 }
 
 export interface GitHubRepo {

@@ -581,4 +581,213 @@ describe("GitHub Data Layer Acceptance Tests", () => {
     assert.strictEqual(activity.activity.length, 1);
     assert.strictEqual(activity.activity[0].type, "PushEvent");
   });
+
+  // 13. Invalid token and upstream 401
+  test("Invalid token and upstream 401 propagates failure", async () => {
+    process.env.GITHUB_TOKEN = "invalid_token_xyz";
+
+    const mockFetch: typeof fetch = async () =>
+      new Response(JSON.stringify({ message: "Bad credentials" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    await assert.rejects(
+      async () => getProjectsList("SGOD-pro", { customFetch: mockFetch }),
+      (err: GitHubApiError) => {
+        assert.strictEqual(err.statusCode, 401);
+        return true;
+      }
+    );
+  });
+
+  // 14. Total failure with 403/429/timeout/503 throws typed failure
+  test("Total failure with 403, 429, 503 throws typed error and does not return empty success", async () => {
+    // 503 Service Unavailable on all configured repos
+    const mock503: typeof fetch = async () =>
+      new Response(JSON.stringify({ message: "Service Unavailable" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    await assert.rejects(
+      async () => getProjectsList("SGOD-pro", { customFetch: mock503 }),
+      (err: GitHubApiError) => {
+        assert.strictEqual(err.statusCode, 503);
+        return true;
+      }
+    );
+
+    // 403 Rate Limit on all configured repos
+    const mock403: typeof fetch = async () =>
+      new Response(JSON.stringify({ message: "rate limit exceeded" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    await assert.rejects(
+      async () => getProjectsList("SGOD-pro", { customFetch: mock403 }),
+      (err: GitHubApiError) => {
+        assert.strictEqual(err.statusCode, 403);
+        return true;
+      }
+    );
+  });
+
+  // 15. Good cache surviving failed refresh
+  test("Good cache surviving failed refresh preserves projects and original timestamp", async () => {
+    let fail = false;
+    const mockFetch: typeof fetch = async (url) => {
+      const urlStr = url.toString();
+      if (fail) {
+        return new Response(JSON.stringify({ message: "Rate limit reached" }), { status: 429 });
+      }
+      if (urlStr.includes("Portfolio")) {
+        return new Response(
+          JSON.stringify({
+            id: 101,
+            name: "Portfolio",
+            full_name: "SGOD-pro/Portfolio",
+            description: "Initial good repo",
+            html_url: "https://github.com/SGOD-pro/Portfolio",
+            homepage: null,
+            stargazers_count: 10,
+            forks_count: 2,
+            language: "TypeScript",
+            topics: [],
+            updated_at: "2026-05-01T00:00:00Z",
+            private: false,
+            fork: false,
+            default_branch: "main",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(JSON.stringify({ message: "Not found" }), { status: 404 });
+    };
+
+    // First fetch succeeds and populates cache
+    const initial = await getProjectsList("SGOD-pro", { customFetch: mockFetch });
+    assert.strictEqual(initial.projects.length, 1);
+    assert.strictEqual(initial.isStale, false);
+    const originalFetchedAt = initial.fetchedAt;
+
+    // Simulate upstream failure
+    fail = true;
+    // Expire cache TTL so refresh is attempted without mutating original timestamp
+    const cacheKey = "projects:SGOD-pro";
+    const entry = (githubCache as unknown as { cache: Map<string, { timestamp: number; ttlMs: number }> }).cache.get(cacheKey);
+    if (entry) {
+      entry.ttlMs = -1;
+    }
+
+    const degraded = await getProjectsList("SGOD-pro", { customFetch: mockFetch });
+    assert.strictEqual(degraded.isStale, true);
+    assert.strictEqual(degraded.fetchedAt, originalFetchedAt);
+    assert.strictEqual(degraded.projects.length, 1);
+    assert.strictEqual(degraded.projects[0].name, "Portfolio");
+  });
+
+  // 16. Fresh cache avoiding upstream calls
+  test("Fresh cache returns immediately without upstream requests", async () => {
+    let networkCalls = 0;
+    const mockFetch: typeof fetch = async () => {
+      networkCalls++;
+      return new Response(
+        JSON.stringify({
+          id: 101,
+          name: "Portfolio",
+          full_name: "SGOD-pro/Portfolio",
+          description: "Fresh repo",
+          html_url: "https://github.com/SGOD-pro/Portfolio",
+          homepage: null,
+          stargazers_count: 10,
+          forks_count: 2,
+          language: "TypeScript",
+          topics: [],
+          updated_at: "2026-05-01T00:00:00Z",
+          private: false,
+          fork: false,
+          default_branch: "main",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    };
+
+    // 1st call -> network
+    const first = await getProjectsList("SGOD-pro", { customFetch: mockFetch });
+    assert.strictEqual(networkCalls, 1);
+    assert.strictEqual(first.projects.length, 1);
+
+    // 2nd call while fresh -> 0 additional network calls
+    const second = await getProjectsList("SGOD-pro", { customFetch: mockFetch });
+    assert.strictEqual(networkCalls, 1);
+    assert.strictEqual(second.projects.length, 1);
+  });
+
+  // 17. Failure responses not being cached as successful emptiness
+  test("Failure responses are not cached as successful emptiness", async () => {
+    const mock500: typeof fetch = async () =>
+      new Response(JSON.stringify({ message: "Server error" }), { status: 500 });
+
+    // Ensure cache starts empty
+    githubCache.clear();
+
+    await assert.rejects(
+      async () => getProjectsList("SGOD-pro", { customFetch: mock500 }),
+      (err: GitHubApiError) => {
+        assert.strictEqual(err.statusCode, 500);
+        return true;
+      }
+    );
+
+    // Cache must remain empty - failure was NOT stored as successful emptiness
+    const cacheEntry = githubCache.get("projects:SGOD-pro");
+    assert.strictEqual(cacheEntry, null);
+  });
+
+  // 18. Error-to-success retry recovery
+  test("Error-to-success retry recovery succeeds after initial failure", async () => {
+    let shouldFail = true;
+    const mockFetch: typeof fetch = async () => {
+      if (shouldFail) {
+        return new Response(JSON.stringify({ message: "Temporary network error" }), { status: 503 });
+      }
+      return new Response(
+        JSON.stringify({
+          id: 101,
+          name: "Portfolio",
+          full_name: "SGOD-pro/Portfolio",
+          description: "Recovered repo",
+          html_url: "https://github.com/SGOD-pro/Portfolio",
+          homepage: null,
+          stargazers_count: 5,
+          forks_count: 0,
+          language: "TypeScript",
+          topics: [],
+          updated_at: "2026-05-01T00:00:00Z",
+          private: false,
+          fork: false,
+          default_branch: "main",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    };
+
+    // 1st attempt: fails with 503
+    await assert.rejects(
+      async () => getProjectsList("SGOD-pro", { customFetch: mockFetch }),
+      (err: GitHubApiError) => {
+        assert.strictEqual(err.statusCode, 503);
+        return true;
+      }
+    );
+
+    // 2nd attempt (retry): succeeds and delivers projects
+    shouldFail = false;
+    const recovered = await getProjectsList("SGOD-pro", { customFetch: mockFetch });
+    assert.strictEqual(recovered.projects.length, 1);
+    assert.strictEqual(recovered.projects[0].name, "Portfolio");
+    assert.strictEqual(recovered.isStale, false);
+  });
 });

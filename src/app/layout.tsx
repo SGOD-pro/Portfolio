@@ -1,39 +1,51 @@
 import type { Metadata } from "next";
-import { Space_Mono, IBM_Plex_Mono } from "next/font/google";
+import { Geist, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const spaceMono = Space_Mono({
-  variable: "--font-sans-mono",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["400", "700"],
 });
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "A portfolio site",
-  description: "A simple portfolio site built with Next.js by @souvikkarmkar",
+  title: {
+    default: "Souvik Karmakar | Fullstack Developer & Applied AI Engineer",
+    template: "%s | Souvik Karmakar",
+  },
+  description:
+    "Portfolio of Souvik Karmakar (@SGOD-pro) - Fullstack Developer & Applied AI Engineer specializing in TypeScript, Next.js, and Python.",
   keywords: [
-    "portfolio",
-    "next.js",
-    "react",
-    "souvikkarmkar",
-    "ai",
-    "artificial intelligence",
-    "machine learning",
-    "deep learning",
-    "data science",
-    "python",
-    "javascript",
-    "typescript",
-    "web development",
-    "software engineering",
-    "ai enthousiast",
+    "Souvik Karmakar",
+    "SGOD-pro",
+    "Fullstack Developer",
+    "Applied AI Engineer",
+    "TypeScript",
+    "Next.js",
+    "React",
+    "Python",
+    "Software Engineer",
   ],
+  authors: [{ name: "Souvik Karmakar", url: "https://github.com/SGOD-pro" }],
+  creator: "Souvik Karmakar",
+  openGraph: {
+    title: "Souvik Karmakar | Fullstack Developer & Applied AI Engineer",
+    description:
+      "Selected software repositories, verified documentation, and architectural designs by Souvik Karmakar.",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Souvik Karmakar | Fullstack Developer & Applied AI Engineer",
+    description:
+      "Selected software repositories, verified documentation, and architectural designs by Souvik Karmakar.",
+  },
 };
 
 export default function RootLayout({
@@ -44,9 +56,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceMono.variable} ${plexMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${plexMono.variable} h-full antialiased dark`}
     >
-      <body className="flex flex-col min-h-dvh w-full">{children}</body>
+      <body className="flex flex-col min-h-dvh w-full font-sans">{children}</body>
     </html>
   );
 }

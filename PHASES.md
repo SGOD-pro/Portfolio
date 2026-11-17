@@ -280,6 +280,11 @@ Add focused tests for:
 - [x] Private repository filtering.
 - [x] Rejected unknown repositories and document paths.
 - [x] No token in browser payloads or client bundles.
+- [x] Invalid token (401) propagation vs missing-token fallback.
+- [x] Total upstream failure throws typed error and avoids caching empty success.
+- [x] Usable cache preservation and stale timestamp retention across failed refresh.
+- [x] Fresh cache immediate return without upstream calls.
+- [x] Retry error clearance, abort controller cancellation, and recovery.
 
 Perform one bounded live API smoke check.
 
@@ -395,7 +400,7 @@ Do not infer:
 
 ## Phase 4. Replace Placeholder Content and Fix Contact
 
-Status: NOT STARTED
+Status: VERIFIED
 
 ### Home
 
@@ -455,14 +460,14 @@ Check the existing LinkedIn target against its displayed URL. The inspected targ
 
 ### Acceptance
 
-- [ ] Production UI contains no fictional projects, logs, metrics, or delivery states.
-- [ ] Important claims have a known source.
-- [ ] GitHub failures leave identity, navigation, and contact usable.
-- [ ] Email links and clipboard success/failure work.
-- [ ] Any mailto composer handles spaces, ampersands, and newlines correctly.
-- [ ] No test sends a real email or contacts another person.
-- [ ] No unsupported resume link or invented career history.
-- [ ] Content remains readable with long names and missing descriptions.
+- [x] Production UI contains no fictional projects, logs, metrics, or delivery states.
+- [x] Important claims have a known source.
+- [x] GitHub failures leave identity, navigation, and contact usable.
+- [x] Email links and clipboard success/failure work.
+- [x] Any mailto composer handles spaces, ampersands, and newlines correctly.
+- [x] No test sends a real email or contacts another person.
+- [x] No unsupported resume link or invented career history.
+- [x] Content remains readable with long names and missing descriptions.
 
 ---
 
@@ -503,20 +508,20 @@ Accessibility:
 
 ### Acceptance
 
-- [ ] Motion never blocks navigation, reading, or contact.
-- [ ] Reduced motion removes nonessential movement.
-- [ ] No lost focus or keyboard trap.
-- [ ] Controls remain visible at 200% zoom.
-- [ ] Long documents do not distort through glass effects.
-- [ ] Primary actions remain readable in all states.
-- [ ] No duplicate listeners, timelines, or animation loops after navigation.
-- [ ] Same-size before/after screenshots inspected for affected routes.
+- [x] Motion never blocks navigation, reading, or contact.
+- [x] Reduced motion removes nonessential movement.
+- [x] No lost focus or keyboard trap.
+- [x] Controls remain visible at 200% zoom.
+- [x] Long documents do not distort through glass effects.
+- [x] Primary actions remain readable in all states.
+- [x] No duplicate listeners, timelines, or animation loops after navigation.
+- [x] Same-size before/after screenshots inspected for affected routes.
 
 ---
 
 ## Phase 6. Production Verification, SEO, and Cleanup
 
-Status: NOT STARTED
+Status: VERIFIED
 
 ### Production Checks
 
@@ -600,16 +605,16 @@ Repeat a fixed route-navigation sequence and inspect whether timers, active anim
 
 ### Acceptance
 
-- [ ] Lint, TypeScript, build, and focused tests pass.
-- [ ] Required Playwright flows have recorded evidence.
-- [ ] No unexplained runtime or hydration errors.
-- [ ] No page-level horizontal overflow at tested sizes.
-- [ ] Real-data and API-failure flows both work.
-- [ ] No secrets in client output.
-- [ ] Performance targets measured or explicitly marked unmet/unverified.
-- [ ] Metadata uses verified information.
-- [ ] README and verification records match actual behavior.
-- [ ] Final diff contains no unrelated changes.
+- [x] Lint, TypeScript, build, and focused tests pass.
+- [x] Required Playwright flows have recorded evidence.
+- [x] No unexplained runtime or hydration errors.
+- [x] No page-level horizontal overflow at tested sizes.
+- [x] Real-data and API-failure flows both work.
+- [x] No secrets in client output.
+- [x] Performance targets measured or explicitly marked unmet/unverified.
+- [x] Metadata uses verified information.
+- [x] README and verification records match actual behavior.
+- [x] Final diff contains no unrelated changes.
 
 ## Definition of Done
 

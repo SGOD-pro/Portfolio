@@ -1,110 +1,84 @@
 "use client";
 
-const skills = [
-  {
-    title: "Backend",
-    layer: "layer_02",
-    accent: "bg-accent",
-    tags: ["Node.js", "Go", "Python", "PostgreSQL", "Redis", "MongoDB"],
-  },
-  {
-    title: "Frontend",
-    layer: "layer_01",
-    accent: "bg-warning",
-    tags: ["Next.js", "TS", "Tailwind CSS", "GSAP"],
-  },
-  {
-    title: "AI/ML",
-    layer: "neural_net",
-    accent: "bg-command",
-    tags: ["Scikit-learn", "OpenAI API", "Vector DBs", "LangChain"],
-  },
-  {
-    title: "DevOps",
-    layer: "infra_04",
-    accent: "bg-danger",
-    tags: ["Docker", "Kubernetes", "AWS", "CI/CD"],
-  },
-];
+import { useRef } from "react";
+import { useReveal } from "@/hooks/useReveal";
+import TextReveal from "@/components/TextReveal";
 
-const metrics = [
-  { label: "Optimization", value: "94%", accent: "bg-accent" },
-  { label: "Scalability", value: "89%", accent: "bg-warning" },
-  { label: "Precision", value: "99.9%", accent: "bg-danger" },
+const skillCategories = [
+  {
+    title: "Frontend Development",
+    description: "Building responsive, accessible web interfaces with modern rendering and motion.",
+    technologies: ["Next.js", "React", "TypeScript", "Tailwind CSS", "GSAP", "HTML5 / WebGL", "State Machines"],
+  },
+  {
+    title: "Backend & Systems",
+    description: "Designing resilient REST & GraphQL APIs, data models, and performant backend services.",
+    technologies: ["Node.js", "Python", "Go", "PostgreSQL", "Redis", "MongoDB", "Prisma / ORMs"],
+  },
+  {
+    title: "AI & Machine Learning",
+    description: "Implementing retrieval pipelines, LLM-driven workflows, and embedding vector stores.",
+    technologies: ["OpenAI API", "PyTorch", "LangChain", "Vector Databases", "RAG Pipelines", "Scikit-learn"],
+  },
+  {
+    title: "DevOps & Tooling",
+    description: "Containerization, automated continuous integration, and secure cloud environments.",
+    technologies: ["Docker", "Kubernetes", "AWS", "GitHub Actions", "Linux / Shell", "CI/CD Workflows"],
+  },
 ];
 
 function Skills() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useReveal(containerRef);
+
   return (
-    <div className="relative flex flex-col grow">
-      <div className="my-1.5 flex items-center gap-2 text-[11px] font-mono">
+    <div ref={containerRef} className="relative flex flex-col grow">
+      {/* Linux prompt */}
+      <div className="my-1.5 flex items-center gap-2 text-xs font-mono" data-reveal>
         <span className="text-field-placeholder font-bold">souvik@portfolio:~$</span>
         <span className="text-command">skills</span>
-        <span className="text-muted text-[10px] ml-auto hidden sm:inline">
-          Analyzing core competencies... <span className="text-accent">[INDEXING COMPLETE]</span>
-        </span>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-12 mt-2">
-        {skills.map((group) => (
+      <header className="mt-1.5 mb-3">
+        <TextReveal
+          text="Skills & Capabilities"
+          className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
+          delay={0.16}
+          stagger={0.02}
+        />
+        <p data-reveal className="mt-0.5 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
+          Core technical competencies, production frameworks, and engineering tools across fullstack and applied AI development.
+        </p>
+      </header>
+
+      {/* 4 Skill Categories Grid */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {skillCategories.map((group) => (
           <section
             key={group.title}
-            className="relative rounded-xl border border-white/10 bg-white/[0.03] p-3.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] lg:col-span-6"
+            className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-4.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] flex flex-col justify-between transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.05] min-w-0"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted font-mono">
-                <span className="text-accent">▣</span>
-                <span className="font-semibold text-foreground">{group.title}</span>
-              </div>
-              <span className="text-[10px] uppercase tracking-wider text-muted font-mono">
-                [{group.layer}]
-              </span>
+            <div>
+              <h2 className="text-base sm:text-lg font-sans font-semibold text-foreground">
+                {group.title}
+              </h2>
+              <p className="mt-1 text-xs font-sans text-muted leading-relaxed">
+                {group.description}
+              </p>
             </div>
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {group.tags.map((tag) => (
+
+            <div className="mt-3 pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5">
+              {group.technologies.map((tech) => (
                 <span
-                  key={tag}
-                  className="rounded border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] tracking-wide text-accent font-mono font-medium"
+                  key={tech}
+                  className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-mono text-accent/90"
                 >
-                  {tag}
+                  {tech}
                 </span>
               ))}
             </div>
-            <div className="mt-3.5 h-1 w-full rounded-full bg-white/10">
-              <div className={`h-1 rounded-full ${group.accent}`} style={{ width: "78%" }} />
-            </div>
           </section>
         ))}
-      </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-12">
-        <div className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] lg:col-span-8 flex flex-col justify-end min-h-[140px]">
-          <p className="text-[10px] uppercase tracking-wider text-muted font-mono font-medium">Architectural Analysis</p>
-          <div className="mt-2.5 rounded-lg border border-white/10 bg-white/[0.02] p-3">
-            <h3 className="text-xs sm:text-sm font-semibold tracking-tight text-foreground font-mono">
-              Full Stack Architecture
-            </h3>
-            <p className="mt-1 text-xs text-muted font-mono leading-relaxed">
-              Cross-functional expertise in distributed systems, resilient API backends, and modern client interfaces.
-            </p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] lg:col-span-4 flex flex-col justify-center">
-          <p className="text-[10px] uppercase tracking-wider text-muted font-mono font-medium mb-2.5">System Focus</p>
-          <div className="space-y-2.5">
-            {metrics.map((metric) => (
-              <div key={metric.label}>
-                <div className="flex items-center justify-between text-xs tracking-wider text-muted font-mono">
-                  <span>{metric.label}</span>
-                  <span className="font-semibold text-foreground">{metric.value}</span>
-                </div>
-                <div className="mt-1 h-1 w-full rounded-full bg-white/10">
-                  <div className={`h-1 rounded-full ${metric.accent}`} style={{ width: metric.value }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

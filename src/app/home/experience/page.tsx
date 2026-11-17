@@ -1,44 +1,107 @@
 "use client";
 
+import Link from "next/link";
+import { useRef } from "react";
+import { useReveal } from "@/hooks/useReveal";
+import TextReveal from "@/components/TextReveal";
+
+const focusAreas = [
+  {
+    title: "Fullstack Web Engineering",
+    period: "2023 – Present",
+    description:
+      "Developing end-to-end applications with Next.js, React, and TypeScript. Designing modular component systems, server actions, and responsive interfaces optimized for performance.",
+    highlights: ["Next.js App Router & Server Components", "Design system implementation with Tailwind", "State management & accessible form design"],
+  },
+  {
+    title: "Applied AI & Retrieval Systems",
+    period: "2023 – Present",
+    description:
+      "Building practical developer tools and retrieval-augmented generation (RAG) pipelines using vector embeddings, OpenAI APIs, and custom parsing workflows.",
+    highlights: ["Semantic document indexing & retrieval", "Streaming LLM responses in real-time interfaces", "Prompt engineering & evaluation workflows"],
+  },
+  {
+    title: "Backend Services & API Design",
+    period: "2022 – Present",
+    description:
+      "Designing clean REST and GraphQL endpoints, data models with PostgreSQL and MongoDB, and containerized microservices with Docker.",
+    highlights: ["Database schema design & migrations", "Authentication & secure route protection", "Performance profiling and caching strategies"],
+  },
+];
+
 function Experience() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useReveal(containerRef);
+
   return (
-    <div className="relative flex flex-col grow">
-      <div className="my-1.5 flex items-center gap-2 text-[11px] font-mono">
+    <div ref={containerRef} className="relative flex flex-col grow">
+      {/* Linux prompt at top left */}
+      <div className="my-1.5 flex items-center gap-2 text-xs font-mono" data-reveal>
         <span className="text-field-placeholder font-bold">souvik@portfolio:~$</span>
         <span className="text-command">experience</span>
       </div>
 
-      <div className="mt-2.5 max-w-3xl rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full border border-success/30 bg-success/15 text-success text-[10px] font-mono uppercase tracking-wider mb-3">
-          <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-          <span>Status: Open for Opportunities</span>
-        </div>
-
-        <h2 className="text-sm sm:text-base font-bold text-foreground leading-snug tracking-tight font-mono">
-          Aspiring Engineer ready to <span className="text-accent">build &amp; scale</span>
-        </h2>
-
-        <p className="text-muted text-[11px] sm:text-xs leading-relaxed mt-2.5 font-mono max-w-2xl">
-          I am actively seeking entry-level and junior fullstack engineering roles. With a strong foundation in modern web
-          architectures, distributed backends, and applied AI workflows, I am eager to contribute to high-impact products
-          and collaborate with experienced teams.
-        </p>
-
-        <div className="mt-4 pt-4 border-t border-white/10 grid gap-3 sm:grid-cols-3 font-mono text-[11px]">
-          <div className="p-2.5 rounded-lg border border-white/10 bg-white/[0.02]">
-            <p className="text-muted text-[9px] uppercase tracking-wider">Primary Focus</p>
-            <p className="text-foreground font-semibold mt-0.5">Fullstack Web &amp; APIs</p>
+      <header className="mt-2 mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <TextReveal
+              text="Experience"
+              className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
+              delay={0.16}
+              stagger={0.025}
+            />
+            <p data-reveal className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
+              Technical background, engineering project focus, and core developer practices.
+            </p>
           </div>
-          <div className="p-2.5 rounded-lg border border-white/10 bg-white/[0.02]">
-            <p className="text-muted text-[9px] uppercase tracking-wider">Core Stack</p>
-            <p className="text-foreground font-semibold mt-0.5">Next.js, TS, Python, Go</p>
-          </div>
-          <div className="p-2.5 rounded-lg border border-white/10 bg-white/[0.02]">
-            <p className="text-muted text-[9px] uppercase tracking-wider">Availability</p>
-            <p className="text-success font-semibold mt-0.5">Immediate / Full-time</p>
+          <div data-reveal className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+            <span>Open for engineering roles</span>
           </div>
         </div>
+      </header>
+
+      {/* Experience / Focus Cards */}
+      <div className="space-y-4">
+        {focusAreas.map((area) => (
+          <section
+            key={area.title}
+            className="rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.05] min-w-0"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-white/10">
+              <h2 className="text-lg sm:text-xl font-sans font-semibold text-foreground">
+                {area.title}
+              </h2>
+              <span className="text-xs font-mono text-muted">{area.period}</span>
+            </div>
+
+            <p className="mt-3 text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
+              {area.description}
+            </p>
+
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {area.highlights.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-mono text-accent/90"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
+
+      <footer data-reveal className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10 text-xs font-sans text-muted">
+        <span>Looking to discuss fullstack or applied AI opportunities?</span>
+        <Link
+          href="/home/contact"
+          className="text-accent font-mono hover:underline inline-flex items-center gap-1"
+        >
+          Get in touch →
+        </Link>
+      </footer>
     </div>
   );
 }

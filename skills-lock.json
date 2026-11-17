@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "skills": {
+    "gsap-react": {
+      "source": "greensock/gsap-skills",
+      "commit": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "sourceType": "github",
+      "skillPath": "skills/gsap-react/SKILL.md",
+      "computedHash": "35fd08f2cbfc945f1a8cdd39e232882a19e27781a4043ee1bc71f65432f03389"
+    },
+    "motion-doctrine": {
+      "source": "heygen-com/hyperframes",
+      "commit": "346579b6b9bfb2959a931dd37282d8c4f67ce784",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/motion-doctrine/SKILL.md",
+      "computedHash": "45cce525dc6ed9731e6b8544c023a3c2c8494f3cae453eaf6cc9315f51dee4b7"
+    }
+  }
+}

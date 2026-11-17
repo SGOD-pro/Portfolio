@@ -23,6 +23,7 @@ type CodeIcon3DProps = {
   bevelThickness?: number;
   bevelSize?: number;
   onHover?: (isHovered: boolean) => void;
+  isHovered?: boolean;
   autoRotate?: boolean;
   pauseOnHover?: boolean;
   isInteracting?: boolean;
@@ -111,6 +112,7 @@ function CodeIcon3D({
   bevelThickness = 0.1,
   bevelSize = 0.05,
   onHover,
+  isHovered: externalHovered,
   autoRotate = true,
   pauseOnHover = true,
   isInteracting = false,
@@ -119,7 +121,8 @@ function CodeIcon3D({
   materialType = "glossy",
 }: CodeIcon3DProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const [internalHovered, setInternalHovered] = useState(false);
+  const isHovered = externalHovered ?? internalHovered;
   const resetToOrigin = useRef(false);
   const lastResetTrigger = useRef<number | undefined>(undefined);
 
@@ -219,11 +222,11 @@ function CodeIcon3D({
     <group
       ref={groupRef}
       onPointerEnter={() => {
-        setIsHovered(true);
+        setInternalHovered(true);
         if (onHover) onHover(true);
       }}
       onPointerLeave={() => {
-        setIsHovered(false);
+        setInternalHovered(false);
         if (onHover) onHover(false);
       }}
     >
@@ -351,7 +354,9 @@ export default function InteractiveCodeIcon({
   enableZoom = false,
   resetOnRelease = true,
   color = "#b46004",
-  autoRotate = false,
+  autoRotate = true,
+  pauseOnHover = true,
+  rotationSpeed = 0.5,
   ...props
 }: InteractiveCodeIconProps) {
   const [isInteracting, setIsInteracting] = useState(false);
@@ -381,7 +386,11 @@ export default function InteractiveCodeIcon({
   };
 
   return (
-    <div style={{ width, height, background, position: "relative" }}>
+    <div
+      style={{ width, height, background, position: "relative" }}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+    >
       <WebGLErrorBoundary fallback={<StaticCodeFallback color={color} height={height} />}>
         <Canvas
           key={stableId}
@@ -416,8 +425,11 @@ export default function InteractiveCodeIcon({
             <CodeIcon3D
               {...props}
               autoRotate={autoRotate}
+              pauseOnHover={pauseOnHover}
+              rotationSpeed={rotationSpeed}
               color={color}
               isInteracting={isInteracting}
+              isHovered={isHovered}
               resetOnRelease={resetOnRelease}
               resetRotationTrigger={resetCounter}
               onHover={setIsHovered}
@@ -449,33 +461,6 @@ export default function InteractiveCodeIcon({
           </React.Suspense>
         </Canvas>
       </WebGLErrorBoundary>
-
-      <button
-        type="button"
-        onClick={handleReset}
-        className="absolute top-2 right-2 px-2 py-0.5 text-[10px] uppercase font-mono rounded border border-segment/60 bg-surface/80 text-muted hover:text-foreground hover:border-accent transition-colors z-20 focus:outline-none focus:ring-1 focus:ring-accent"
-        aria-label="Reset 3D view orientation"
-        title="Reset 3D view"
-      >
-        Reset
-      </button>
-
-      {isHovered && !isInteracting && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "10px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "#94a3b8",
-            pointerEvents: "none",
-            opacity: 0.8,
-          }}
-          className="w-full text-xs text-center font-mono"
-        >
-          Interactive <span className="text-accent">&lt;/&gt;</span>
-        </div>
-      )}
     </div>
   );
 }

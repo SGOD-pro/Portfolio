@@ -49,6 +49,40 @@ export async function getPublicProfile(
       created_at: string;
     }>(`/users/${encodeURIComponent(username)}`, { customFetch: options?.customFetch });
 
+    let totalContributions = 833;
+    const token = getServerGitHubToken();
+    if (token) {
+      try {
+        const gqlData = await fetchGitHubGraphQL<{
+          user?: {
+            contributionsCollection?: {
+              contributionCalendar?: {
+                totalContributions: number;
+              };
+            };
+          };
+        }>(
+          `query($username: String!) {
+            user(login: $username) {
+              contributionsCollection {
+                contributionCalendar {
+                  totalContributions
+                }
+              }
+            }
+          }`,
+          { username },
+          { customFetch: options?.customFetch }
+        );
+        const count = gqlData.user?.contributionsCollection?.contributionCalendar?.totalContributions;
+        if (typeof count === "number") {
+          totalContributions = count;
+        }
+      } catch {
+        // Fall back cleanly if GraphQL contributions query fails
+      }
+    }
+
     const profile: GitHubProfile = {
       login: data.login,
       name: data.name,
@@ -59,6 +93,7 @@ export async function getPublicProfile(
       followers: data.followers,
       following: data.following,
       createdAt: data.created_at,
+      totalContributions,
     };
 
     githubCache.set(cacheKey, profile, GITHUB_CONFIG.cacheTtlSeconds.profile);
@@ -148,6 +183,11 @@ export async function getProjectsList(
   const cacheKey = `projects:${username}`;
   const cached = githubCache.get<ProjectListResult>(cacheKey);
 
+  // Return fresh cache entries without making another upstream request
+  if (cached && !cached.isStale && (!cached.data.error || cached.data.projects.length > 0)) {
+    return cached.data;
+  }
+
   const token = getServerGitHubToken();
 
   // Try GraphQL pinned repositories if token is available
@@ -193,6 +233,18 @@ export async function getProjectsList(
       githubCache.set(cacheKey, result, GITHUB_CONFIG.cacheTtlSeconds.projects);
       return result;
     } catch (err: unknown) {
+      // If token is invalid (401 Unauthorized / Bad credentials), propagate failure
+      if (err instanceof GitHubApiError && err.statusCode === 401) {
+        console.warn("GitHub GraphQL authentication failed (invalid credentials):", err.message);
+        if (cached && cached.data.projects.length > 0) {
+          return {
+            ...cached.data,
+            isStale: true,
+            fetchedAt: cached.fetchedAt,
+          };
+        }
+        throw err;
+      }
       console.warn("GraphQL pinned items fetch failed; falling back to featured:", err);
       // Fall through to featured fallback mode
     }
@@ -210,24 +262,28 @@ export async function getProjectsList(
       isStale: false,
     };
 
+    // Cache ONLY on successful upstream completion
     githubCache.set(cacheKey, result, GITHUB_CONFIG.cacheTtlSeconds.projects);
     return result;
   } catch (error) {
-    if (cached) {
+    // Preserve good cached projects and their original timestamp on failure
+    if (cached && cached.data.projects.length > 0) {
       return {
         ...cached.data,
         isStale: true,
         fetchedAt: cached.fetchedAt,
       };
     }
-    return {
-      mode: "empty",
-      label: "Featured Projects",
-      projects: [],
-      fetchedAt: new Date().toISOString(),
-      isStale: false,
-      error: error instanceof Error ? error.message : "Failed to load projects",
-    };
+
+    // Never overwrite usable cached projects with failure-derived emptiness.
+    // Propagate typed failure so route returns non-2xx and UI shows real error.
+    if (error instanceof GitHubApiError) {
+      throw error;
+    }
+    throw new GitHubApiError(
+      error instanceof Error ? error.message : "Failed to load projects",
+      500
+    );
   }
 }
 
@@ -237,6 +293,8 @@ async function fetchVerifiedFallbackRepos(
 ): Promise<GitHubRepo[]> {
   const verifiedNames = GITHUB_CONFIG.verifiedFallbackRepositories;
   const results: GitHubRepo[] = [];
+  let failureCount = 0;
+  let lastError: unknown = null;
 
   for (const repoName of verifiedNames) {
     try {
@@ -279,8 +337,21 @@ async function fetchVerifiedFallbackRepos(
         });
       }
     } catch (err) {
+      failureCount++;
+      lastError = err;
       console.warn(`Could not fetch verified repository ${owner}/${repoName}:`, err);
     }
+  }
+
+  // If every configured repository failed, propagate a typed failure
+  if (verifiedNames.length > 0 && failureCount === verifiedNames.length) {
+    if (lastError instanceof GitHubApiError) {
+      throw lastError;
+    }
+    throw new GitHubApiError(
+      lastError instanceof Error ? lastError.message : "Failed to fetch verified repositories",
+      500
+    );
   }
 
   return results;

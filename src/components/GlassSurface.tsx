@@ -1,834 +1,774 @@
 "use client";
 
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 
-// The lens samples a reconstructed snapshot of the supplied navbar.
-// WebGL cannot read pixels from unrelated HTML behind a canvas.
-const VS = `attribute vec2 a; varying vec2 uv; void main(){uv=a*.5+.5;gl_Position=vec4(a,0.,1.);}`;
-const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-#else
-precision mediump float;
-#endif
-varying vec2 uv; uniform sampler2D tex; uniform vec2 box, scene, origin;
-uniform float refr,bevel,dispersion,frost,shine,radius,tintOpacity,fastLowFrost;
-uniform vec3 tint;
-float sd(vec2 p){vec2 q=abs(p)-(box*.5-vec2(radius));return length(max(q,0.))+min(max(q.x,q.y),0.)-radius;}
-vec2 normal(vec2 p){vec2 q=abs(p)-(box*.5-vec2(radius));vec2 s=vec2(p.x<0.?-1.:1.,p.y<0.?-1.:1.);vec2 o=max(q,0.);if(o.x>0.&&o.y>0.)return normalize(o)*s;return q.x>q.y?vec2(s.x,0.):vec2(0.,s.y);}
-vec3 at(vec2 p){return texture2D(tex,clamp(vec2(p.x/scene.x,1.-p.y/scene.y),vec2(0.),vec2(1.))).rgb;}
-vec3 blurred(vec2 p){if(fastLowFrost > .5 && frost <= .05) return at(p);float sigma=frost*.8;vec3 sum=vec3(0.);float total=0.;for(int y=-2;y<=2;y++){for(int x=-2;x<=2;x++){vec2 q=vec2(float(x),float(y));float w=exp(-.5*dot(q,q));sum+=at(p+q*sigma)*w;total+=w;}}return sum/total;}
-void main(){vec2 p=vec2(uv.x*box.x,(1.-uv.y)*box.y);vec2 v=p-box*.5;float d=sd(v);float mask=1.-smoothstep(-.75,.75,d);vec2 n=normal(v);float band=max(2.,bevel*min(box.x,box.y)*.4*(1.-.2*abs(n.y)));float edge=pow(1.-clamp(max(-d,0.)/band,0.,1.),2.2);float center=exp(-pow(v.x/(box.x*.42),2.));float inner=.45*center*smoothstep(0.,box.y*.5,abs(v.y));vec2 delta=edge*n-vec2(0.,sign(v.y)*inner);float bend=min(box.x,box.y)*.24*refr;float split=min(box.x,box.y)*.03*dispersion*refr;vec2 src=origin+p-delta*bend;vec3 c=vec3(blurred(src+delta*split).r,blurred(src).g,blurred(src-delta*split).b);c=mix(c,tint,tintOpacity);float rim=exp(-max(-d,0.)/1.2);float face=max(dot(n,normalize(vec2(-1.,-1.))),0.);c+=vec3(shine*(rim*(.07+.2*face)+edge*edge*.035*face));gl_FragColor=vec4(c,mask);}`;
+export type GlassBackdrop =
+  | string
+  | HTMLImageElement
+  | HTMLCanvasElement
+  | HTMLVideoElement;
 
-const clamp = (v: number | string | undefined, min: number, max: number): number =>
-  Math.max(min, Math.min(max, Number.isFinite(Number(v)) ? Number(v) : min));
-
-function color3(value?: string): [number, number, number] {
-  const m = /^#([0-9a-f]{6})$/i.exec(value || "");
-  const h = m ? m[1] : "dfeeff";
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255) as [number, number, number];
-}
-
-function xml(s: unknown): string {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-const SCENE_PADDING = 96;
-
-function surroundingColor(menu: HTMLElement): string {
-  let node: HTMLElement | null = menu.parentElement;
-  while (node) {
-    const color = getComputedStyle(node).backgroundColor;
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 1;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return "#ffffff";
-    ctx.clearRect(0, 0, 1, 1);
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 0, 1, 1);
-    if (ctx.getImageData(0, 0, 1, 1).data[3] === 255) return color;
-    node = node.parentElement;
-  }
-  return "#ffffff";
-}
-
-function stableChildRect(
-  child: Element,
-  link: Element,
-  menuRect: DOMRect,
-  sx: number,
-  sy: number
-): { x: number; y: number; width: number; height: number } {
-  const r = child.getBoundingClientRect();
-  const linkRect = link.getBoundingClientRect();
-  const transform = getComputedStyle(link).transform;
-  let localScaleY = 1;
-  if (transform && transform !== "none") {
-    try {
-      localScaleY = new DOMMatrixReadOnly(transform).d || 1;
-    } catch {
-      /* fallback for older browsers */
-    }
-  }
-  const centerY = linkRect.top + linkRect.height / 2;
-  return {
-    x: (r.left - menuRect.left) / sx,
-    y: (centerY - menuRect.top + (r.top - centerY) / localScaleY) / sy,
-    width: r.width / sx,
-    height: r.height / (sy * localScaleY),
-  };
-}
-
-export interface CapturedSource {
-  url: string;
-  width: number;
-  height: number;
-  bg: string;
-}
-
-function capture(
-  menu: HTMLElement | null,
-  activeIndex = 0,
-  activeColor = "#722F37"
-): CapturedSource | null {
-  if (!menu) return null;
-  const rect = menu.getBoundingClientRect();
-  const sx = rect.width / (menu.offsetWidth || 1) || 1;
-  const sy = rect.height / (menu.offsetHeight || 1) || 1;
-  const width = menu.offsetWidth;
-  const height = menu.offsetHeight;
-  if (!width || !height) return null;
-  const bg = getComputedStyle(menu).backgroundColor || "#E8DCC6";
-  let elements = "";
-  menu.querySelectorAll("a[data-index]").forEach((link) => {
-    const icon = link.querySelector("svg");
-    const label = link.querySelector("span");
-    const idx = Number(link.getAttribute("data-index"));
-    const isActive = idx === activeIndex;
-    const inactiveColor = "rgba(255, 255, 255, 0.90)";
-    const color = isActive ? activeColor : inactiveColor;
-    if (icon) {
-      const r = stableChildRect(icon, link, rect, sx, sy);
-      const clone = icon.cloneNode(true) as SVGSVGElement;
-      clone.removeAttribute("class");
-      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-      clone.setAttribute("width", String(r.width));
-      clone.setAttribute("height", String(r.height));
-      clone.setAttribute("x", String(r.x));
-      clone.setAttribute("y", String(r.y));
-      clone.style.color = color;
-      elements += new XMLSerializer().serializeToString(clone);
-    }
-    if (label) {
-      const r = stableChildRect(label, link, rect, sx, sy);
-      const c = getComputedStyle(label);
-      const fontFamily = c.fontFamily || "system-ui, sans-serif";
-      const fontWeight = c.fontWeight || "600";
-      const fontSize = parseFloat(c.fontSize) || 12;
-      const ctx = document.createElement("canvas").getContext("2d");
-      if (ctx) ctx.font = `${c.fontStyle || "normal"} ${fontWeight} ${fontSize}px ${fontFamily}`;
-      const metrics = ctx?.measureText(label.textContent || "");
-      const ascent = metrics?.fontBoundingBoxAscent ?? fontSize * 0.8;
-      const descent = metrics?.fontBoundingBoxDescent ?? fontSize * 0.2;
-      const baseline = r.y + (r.height - ascent - descent) / 2 + ascent;
-      elements += `<text x="${r.x + r.width / 2}" y="${baseline}" text-anchor="middle" fill="${xml(color)}" font-family="${xml(fontFamily)}" font-size="${fontSize}" font-weight="${xml(fontWeight)}" font-style="${xml(c.fontStyle || "normal")}">${xml(label.textContent)}</text>`;
-    }
-  });
-  const padding = SCENE_PADDING;
-  const sceneWidth = width + padding * 2;
-  const sceneHeight = height + padding * 2;
-  const outside = surroundingColor(menu);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sceneWidth * 2}" height="${sceneHeight * 2}" viewBox="0 0 ${sceneWidth} ${sceneHeight}"><rect width="100%" height="100%" fill="${xml(outside)}"/><g transform="translate(${padding} ${padding})"><rect width="${width}" height="${height}" rx="${Math.min(width, height) / 2}" fill="${xml(bg)}"/>${elements}</g></svg>`;
-  return {
-    url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
-    width: sceneWidth,
-    height: sceneHeight,
-    bg,
-  };
-}
-
-export interface MeasuredGeometry {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-function measure(menu: HTMLElement, lens: HTMLElement): MeasuredGeometry {
-  const a = menu.getBoundingClientRect();
-  const b = lens.getBoundingClientRect();
-  const sx = a.width / (menu.offsetWidth || 1) || 1;
-  const sy = a.height / (menu.offsetHeight || 1) || 1;
-  return {
-    x: SCENE_PADDING + (b.left - a.left) / sx,
-    y: SCENE_PADDING + (b.top - a.top) / sy,
-    width: b.width / sx,
-    height: b.height / sy,
-  };
-}
-
-function makeMap(w: number, h: number, r: number, bevel: number): string {
-  if (typeof document === "undefined") return "";
-  const c = document.createElement("canvas");
-  c.width = Math.max(2, Math.round(w * 3));
-  c.height = Math.max(2, Math.round(h * 3));
-  const ctx = c.getContext("2d");
-  if (!ctx) return "";
-  const image = ctx.createImageData(c.width, c.height);
-  for (let y = 0; y < c.height; y++) {
-    for (let x = 0; x < c.width; x++) {
-      const px = (x + 0.5) / 3 - w / 2;
-      const py = (y + 0.5) / 3 - h / 2;
-      const qx = Math.abs(px) - (w / 2 - r);
-      const qy = Math.abs(py) - (h / 2 - r);
-      const ox = Math.max(qx, 0);
-      const oy = Math.max(qy, 0);
-      const l = Math.hypot(ox, oy);
-      const d = l + Math.min(Math.max(qx, qy), 0) - r;
-      let nx = 0;
-      let ny = 0;
-      if (l) {
-        nx = (ox / l) * Math.sign(px);
-        ny = (oy / l) * Math.sign(py);
-      } else if (qx > qy) {
-        nx = Math.sign(px);
-      } else {
-        ny = Math.sign(py);
-      }
-      const isInside = d <= 0;
-      const edge = isInside
-        ? Math.pow(
-            Math.max(0, 1 + d / Math.max(2, bevel * Math.min(w, h) * 0.4 * (1 - 0.2 * Math.abs(ny)))),
-            2.2
-          )
-        : 0;
-      const t = Math.min(1, Math.abs(py) / (h * 0.5));
-      const smooth = t * t * (3 - 2 * t);
-      const inner = isInside
-        ? 0.25 * Math.exp(-Math.pow(px / (w * 0.42), 2)) * smooth * Math.sign(py)
-        : 0;
-      const i = (y * c.width + x) * 4;
-      image.data[i] = 127.5 + 127.5 * 0.64 * edge * nx;
-      image.data[i + 1] = 127.5 + 127.5 * 0.64 * (edge * ny - inner);
-      image.data[i + 2] = 128;
-      image.data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  return c.toDataURL();
-}
-
-export interface LiquidOptions {
-  refr: number;
-  bevel: number;
-  dispersion: number;
-  frost: number;
-  shine: number;
-  roundness: number;
-  tint: string;
-  tintOpacity: number;
-}
-
-interface GPUProps {
-  source: CapturedSource | null;
-  geometry: MeasuredGeometry;
-  options: LiquidOptions;
-  onReady: (ready: boolean) => void;
-  isIOS: boolean;
-}
-
-function GPU({ source, geometry, options, onReady, isIOS }: GPUProps) {
-  const ref = useRef<HTMLCanvasElement | null>(null);
-  const current = useRef<{ source: CapturedSource | null; geometry: MeasuredGeometry; options: LiquidOptions }>({
-    source,
-    geometry,
-    options,
-  });
-  const engine = useRef<{ draw: () => void; load: () => void } | null>(null);
-
-  useEffect(() => {
-    current.current = { source, geometry, options };
-  }, [source, geometry, options]);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const gl = canvas.getContext("webgl", {
-      alpha: true,
-      premultipliedAlpha: false,
-      antialias: true,
-    });
-    if (!gl) return;
-    let alive = true;
-    let program: WebGLProgram | null = null;
-    let buffer: WebGLBuffer | null = null;
-    let texture: WebGLTexture | null = null;
-    let shaders: WebGLShader[] = [];
-    let imageLoaded = false;
-    let loadId = 0;
-
-    function release() {
-      if (!gl) return;
-      if (program) gl.deleteProgram(program);
-      if (buffer) gl.deleteBuffer(buffer);
-      if (texture) gl.deleteTexture(texture);
-      shaders.forEach((s) => gl.deleteShader(s));
-      program = null;
-      buffer = null;
-      texture = null;
-      shaders = [];
-    }
-
-    function compile(type: number, src: string): WebGLShader {
-      if (!gl) throw Error("WebGL unavailable");
-      const sh = gl.createShader(type);
-      if (!sh) throw Error("Could not create shader");
-      gl.shaderSource(sh, src);
-      gl.compileShader(sh);
-      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-        const message = gl.getShaderInfoLog(sh);
-        gl.deleteShader(sh);
-        throw Error(message || "Shader compilation failed");
-      }
-      shaders.push(sh);
-      return sh;
-    }
-
-    function draw() {
-      if (!gl || !program || !imageLoaded || gl.isContextLost()) return;
-      const { source: s, geometry: g, options: o } = current.current;
-      if (!s || !g.width || !g.height) return;
-      const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
-      const w = Math.max(1, Math.round(g.width * dpr));
-      const h = Math.max(1, Math.round(g.height * dpr));
-      if (canvas && canvas.width !== w) canvas.width = w;
-      if (canvas && canvas.height !== h) canvas.height = h;
-      gl.viewport(0, 0, w, h);
-      gl.useProgram(program);
-      const f = (name: string, v: number) => {
-        const loc = gl.getUniformLocation(program!, name);
-        if (loc) gl.uniform1f(loc, v);
-      };
-      const boxLoc = gl.getUniformLocation(program, "box");
-      if (boxLoc) gl.uniform2f(boxLoc, g.width, g.height);
-      const sceneLoc = gl.getUniformLocation(program, "scene");
-      if (sceneLoc) gl.uniform2f(sceneLoc, s.width, s.height);
-      const origLoc = gl.getUniformLocation(program, "origin");
-      if (origLoc) gl.uniform2f(origLoc, g.x, g.y);
-
-      f("refr", o.refr);
-      f("bevel", o.bevel);
-      f("dispersion", o.dispersion);
-      f("frost", o.frost);
-      f("shine", o.shine);
-      f("tintOpacity", o.tintOpacity);
-      f("fastLowFrost", isIOS ? 1 : 0);
-      f("radius", Math.max(2.0, Math.min(g.width, g.height) * 0.5 * o.roundness));
-
-      const tintLoc = gl.getUniformLocation(program, "tint");
-      if (tintLoc) gl.uniform3f(tintLoc, ...color3(o.tint));
-      const texLoc = gl.getUniformLocation(program, "tex");
-      if (texLoc) gl.uniform1i(texLoc, 0);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    }
-
-    function load() {
-      if (!program || !current.current.source) return;
-      const n = ++loadId;
-      const img = new Image();
-      img.onload = () => {
-        if (!gl || !alive || n !== loadId || gl.isContextLost()) return;
-        try {
-          gl.bindTexture(gl.TEXTURE_2D, texture);
-          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-          imageLoaded = true;
-          draw();
-          onReady(true);
-        } catch (e) {
-          console.error("Liquid effect texture:", e);
-          onReady(false);
-        }
-      };
-      img.onerror = () => {
-        if (alive && n === loadId) onReady(false);
-      };
-      img.src = current.current.source.url;
-    }
-
-    function init() {
-      onReady(false);
-      try {
-        release();
-        imageLoaded = false;
-        program = gl!.createProgram();
-        if (!program) throw Error("Could not create WebGL program");
-        gl!.attachShader(program, compile(gl!.VERTEX_SHADER, VS));
-        gl!.attachShader(program, compile(gl!.FRAGMENT_SHADER, FS));
-        gl!.linkProgram(program);
-        if (!gl!.getProgramParameter(program, gl!.LINK_STATUS)) {
-          throw Error(gl!.getProgramInfoLog(program) || "WebGL program link failed");
-        }
-        gl!.useProgram(program);
-        buffer = gl!.createBuffer();
-        gl!.bindBuffer(gl!.ARRAY_BUFFER, buffer);
-        gl!.bufferData(
-          gl!.ARRAY_BUFFER,
-          new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-          gl!.STATIC_DRAW
-        );
-        const a = gl!.getAttribLocation(program, "a");
-        gl!.enableVertexAttribArray(a);
-        gl!.vertexAttribPointer(a, 2, gl!.FLOAT, false, 0, 0);
-        texture = gl!.createTexture();
-        gl!.bindTexture(gl!.TEXTURE_2D, texture);
-        for (const [p, v] of [
-          [gl!.TEXTURE_MIN_FILTER, gl!.LINEAR],
-          [gl!.TEXTURE_MAG_FILTER, gl!.LINEAR],
-          [gl!.TEXTURE_WRAP_S, gl!.CLAMP_TO_EDGE],
-          [gl!.TEXTURE_WRAP_T, gl!.CLAMP_TO_EDGE],
-        ]) {
-          gl!.texParameteri(gl!.TEXTURE_2D, p, v);
-        }
-        load();
-      } catch (e) {
-        console.error("Liquid effect:", e);
-        release();
-        onReady(false);
-      }
-    }
-
-    const lost = (e: Event) => {
-      e.preventDefault();
-      imageLoaded = false;
-      program = null;
-      buffer = null;
-      texture = null;
-      shaders = [];
-      onReady(false);
-    };
-
-    canvas.addEventListener("webglcontextlost", lost);
-    canvas.addEventListener("webglcontextrestored", init);
-    engine.current = { draw, load };
-    init();
-
-    return () => {
-      alive = false;
-      ++loadId;
-      engine.current = null;
-      canvas.removeEventListener("webglcontextlost", lost);
-      canvas.removeEventListener("webglcontextrestored", init);
-      release();
-    };
-  }, [onReady, isIOS]);
-
-  useEffect(() => {
-    engine.current?.load();
-  }, [source]);
-
-  useEffect(() => {
-    engine.current?.draw();
-  }, [geometry, options]);
-
-  return (
-    <canvas
-      ref={ref}
-      aria-hidden="true"
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-      }}
-    />
-  );
-}
-
-interface SVGProps {
-  source: CapturedSource | null;
-  geometry: MeasuredGeometry;
-  options: LiquidOptions;
-}
-
-function SVG({ source, geometry: g, options: o }: SVGProps) {
-  const generatedId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const id = `liquid-${generatedId}`;
-  const r = Math.max(2.0, Math.min(g.width, g.height) * 0.5 * o.roundness);
-  const map = useMemo(
-    () => (g.width && g.height ? makeMap(g.width, g.height, r, o.bevel) : ""),
-    [g.width, g.height, r, o.bevel]
-  );
-  if (!source || !map) return null;
-  const bend = Math.min(g.width, g.height) * 0.24 * o.refr;
-  const split = Math.min(g.width, g.height) * 0.015 * o.dispersion * o.refr;
-  const pad = Math.ceil(bend + split + 24);
-
-  return (
-    <svg
-      viewBox={`0 0 ${g.width} ${g.height}`}
-      aria-hidden="true"
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-      }}
-    >
-      <defs>
-        <clipPath id={`${id}-clip`}>
-          <rect width={g.width} height={g.height} rx={r} />
-        </clipPath>
-        <filter
-          id={`${id}-filter`}
-          filterUnits="userSpaceOnUse"
-          primitiveUnits="userSpaceOnUse"
-          x={-pad}
-          y={-pad}
-          width={g.width + pad * 2}
-          height={g.height + pad * 2}
-          colorInterpolationFilters="sRGB"
-        >
-          <feImage href={map} x="0" y="0" width={g.width} height={g.height} result="map" />
-          <feGaussianBlur
-            in="map"
-            stdDeviation="0.35"
-            edgeMode="duplicate"
-            x="0"
-            y="0"
-            width={g.width}
-            height={g.height}
-            result="smoothMap"
-          />
-          <feGaussianBlur
-            in="SourceGraphic"
-            stdDeviation={o.frost * 0.8}
-            x={-pad}
-            y={-pad}
-            width={g.width + pad * 2}
-            height={g.height + pad * 2}
-            result="soft"
-          />
-          {[-1, 0, 1].map((channel, i) => (
-            <React.Fragment key={i}>
-              <feDisplacementMap
-                in="soft"
-                in2="smoothMap"
-                scale={(-2 * (bend + channel * split)) / 0.64}
-                xChannelSelector="R"
-                yChannelSelector="G"
-                x="0"
-                y="0"
-                width={g.width}
-                height={g.height}
-                result={`s${i}`}
-              />
-              <feColorMatrix
-                in={`s${i}`}
-                type="matrix"
-                values={
-                  [
-                    "1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0",
-                    "0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0",
-                    "0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0",
-                  ][i]
-                }
-                x="0"
-                y="0"
-                width={g.width}
-                height={g.height}
-                result={`c${i}`}
-              />
-            </React.Fragment>
-          ))}
-          <feComposite
-            in="c0"
-            in2="c1"
-            operator="arithmetic"
-            k2="1"
-            k3="1"
-            x="0"
-            y="0"
-            width={g.width}
-            height={g.height}
-            result="rg"
-          />
-          <feComposite
-            in="rg"
-            in2="c2"
-            operator="arithmetic"
-            k2="1"
-            k3="1"
-            x="0"
-            y="0"
-            width={g.width}
-            height={g.height}
-            result="rgbSplit"
-          />
-          <feComposite
-            in="rgbSplit"
-            in2="s1"
-            operator="arithmetic"
-            k2="0.30"
-            k3="0.70"
-            x="0"
-            y="0"
-            width={g.width}
-            height={g.height}
-          />
-        </filter>
-        <linearGradient id={`${id}-light`} x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="white" stopOpacity={o.shine * 0.2} />
-          <stop offset=".3" stopColor="white" stopOpacity={o.shine * 0.03} />
-          <stop offset="1" stopColor="white" stopOpacity={o.shine * 0.07} />
-        </linearGradient>
-      </defs>
-      <g clipPath={`url(#${id}-clip)`}>
-        <image
-          href={source.url}
-          x={-g.x}
-          y={-g.y}
-          width={source.width}
-          height={source.height}
-          filter={`url(#${id}-filter)`}
-        />
-        <rect width={g.width} height={g.height} fill={o.tint} fillOpacity={o.tintOpacity} />
-        <rect width={g.width} height={g.height} fill={`url(#${id}-light)`} />
-      </g>
-      <rect
-        x=".5"
-        y=".5"
-        width={Math.max(0, g.width - 1)}
-        height={Math.max(0, g.height - 1)}
-        rx={r}
-        fill="none"
-        stroke="white"
-        strokeOpacity={o.shine * 0.38}
-      />
-    </svg>
-  );
-}
-
-export interface LiquidGlassEffectProps {
-  menuRef?: React.RefObject<HTMLElement | null>;
-  lensRef?: React.RefObject<HTMLElement | null>;
-  activeIndex?: number;
-  activeColor?: string;
-  active?: boolean;
-  renderer?: "webgl" | "svg";
-  refraction?: number;
-  bevel?: number;
-  dispersion?: number;
-  frost?: number;
-  shine?: number;
-  roundness?: number;
-  tint?: string;
-  tintOpacity?: number;
-}
-
-/** Render the liquid glass effect into a moving, positioned host element. */
-export function LiquidGlassEffect({
-  menuRef,
-  lensRef,
-  activeIndex = 0,
-  activeColor = "#b46004",
-  active = true,
-  renderer = "webgl",
-  refraction = 1,
-  bevel = 0.6,
-  dispersion = 0.25,
-  frost = 0.15,
-  shine = 0.6,
-  roundness = 1,
-  tint = "#dfeeff",
-  tintOpacity = 0.08,
-}: LiquidGlassEffectProps) {
-  const [isIOS] = useState(
-    () =>
-      typeof navigator !== "undefined" &&
-      (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1))
-  );
-  const [source, setSource] = useState<CapturedSource | null>(null);
-  const [geometry, setGeometry] = useState<MeasuredGeometry>({ x: 0, y: 0, width: 0, height: 0 });
-  const [ready, setReady] = useState(false);
-
-  const options = useMemo(
-    () => ({
-      refr: clamp(refraction, 0, 1.5),
-      bevel: clamp(bevel, 0, 1),
-      dispersion: clamp(dispersion, 0, 1),
-      frost: clamp(frost, 0, 1),
-      shine: clamp(shine, 0, 1),
-      roundness: clamp(roundness, 0, 1),
-      tint: /^#[0-9a-f]{6}$/i.test(tint) ? tint : "#dfeeff",
-      tintOpacity: clamp(tintOpacity, 0, 0.5),
-    }),
-    [refraction, bevel, dispersion, frost, shine, roundness, tint, tintOpacity]
-  );
-
-  useEffect(() => {
-    const menu = menuRef?.current;
-    if (!menu) return;
-    let alive = true;
-    const update = () => {
-      if (!alive) return;
-      const next = capture(menu, activeIndex, activeColor);
-      if (next) setSource((prev) => (prev?.url === next.url ? prev : next));
-    };
-    update();
-    const resize = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
-    resize?.observe(menu);
-    window.addEventListener("resize", update);
-    return () => {
-      alive = false;
-      resize?.disconnect();
-      window.removeEventListener("resize", update);
-    };
-  }, [menuRef, activeIndex, activeColor]);
-
-  useEffect(() => {
-    if (isIOS && !active) return;
-    let raf = 0;
-    let last = "";
-    const tick = () => {
-      const menu = menuRef?.current;
-      const lens = lensRef?.current;
-      if (menu && lens) {
-        const g = measure(menu, lens);
-        const key = [g.x, g.y, g.width, g.height].map((v) => Math.round(v * 10)).join(":");
-        if (key !== last) {
-          last = key;
-          setGeometry(g);
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [menuRef, lensRef, isIOS, active]);
-
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: "absolute",
-        inset: 0,
-        borderRadius: "inherit",
-        overflow: "hidden",
-        pointerEvents: "none",
-        background: renderer === "webgl" && !ready ? "rgba(255,255,255,.05)" : "transparent",
-      }}
-    >
-      {renderer === "svg" ? (
-        <SVG source={source} geometry={geometry} options={options} />
-      ) : (
-        <GPU source={source} geometry={geometry} options={options} onReady={setReady} isIOS={isIOS} />
-      )}
-    </div>
-  );
-}
-
-export interface GlassSurfaceProps {
-  children?: React.ReactNode;
+export interface GlassSurfaceProps extends React.HTMLAttributes<HTMLDivElement> {
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
-  className?: string;
-  style?: React.CSSProperties;
   enableLiquidEffect?: boolean;
-  menuRef?: React.RefObject<HTMLElement | null>;
-  lensRef?: React.RefObject<HTMLElement | null>;
-  activeIndex?: number;
-  activeColor?: string;
-  renderer?: "webgl" | "svg";
+  /** Texture for real refraction. A URL must be same-origin or CORS-enabled. */
+  backdrop?: GlassBackdrop;
+  /** Element displaying that texture behind this surface. Centered object-fit only. */
+  backdropRef?: React.RefObject<HTMLElement | null>;
+  backdropFit?: "cover" | "contain" | "stretch";
+  /** Update a moving surface, video or canvas every frame. Static surfaces render on demand. */
+  live?: boolean;
   refraction?: number;
+  /** Optical thickness in CSS pixels, bounded to the surface size. */
+  thickness?: number;
+  /** Strength of the fixed studio reflections, from 0 to 2. */
+  reflection?: number;
+  distortion?: number;
   bevel?: number;
   dispersion?: number;
   frost?: number;
   shine?: number;
-  roundness?: number;
+  /** Degrees clockwise from the top: 0 top, 90 right, 180 bottom, 270 left. */
+  shineAngle?: number;
   tint?: string;
   tintOpacity?: number;
+  borderWidth?: number;
+  borderOpacity?: number;
+  maxDpr?: number;
+  onEffectError?: (error: Error) => void;
 }
-const DEFAULT_GLASS = {
-  renderer: 'webgl' as const,
-  refraction: .77,
-  bevel: 0.42,
-  dispersion: 0.80,
-  frost: 0.05,
-  shine: 1.00,
-  roundness: 1.0,
-  tint: '#dfeeff3b',
-  tintOpacity: 0.08,
-};
-/**
- * GlassSurface container with liquid-glass aesthetic, calm readable backdrop sheen,
- * and optional WebGL/SVG liquid lens refraction.
- */
-export default function GlassSurface({
-  children,
-  width = "100%",
-  height = "100%",
-  borderRadius = 16,
-  className = "",
-  style = {},
-  enableLiquidEffect = false,
-  menuRef,
-  lensRef,
-  activeIndex,
-  activeColor,
-  renderer=DEFAULT_GLASS.renderer,
-  refraction=DEFAULT_GLASS.refraction,
-  bevel=DEFAULT_GLASS.bevel,
-  dispersion=DEFAULT_GLASS.dispersion,
-  frost=DEFAULT_GLASS.frost,
-  shine=DEFAULT_GLASS.shine,
-  roundness,
-  tint,
-  tintOpacity,
-}: GlassSurfaceProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  return (
-    <div
-      ref={containerRef}
-      className={`relative flex flex-col overflow-hidden rounded-2xl border-white/15 bg-black/35 backdrop-blur-[2px] shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.22),inset_0_0_24px_0_rgba(255,255,255,0.02),0_16px_40px_rgba(0,0,0,0.65)] transition-all ${className}`}
-      style={{
-        width: typeof width === "number" ? `${width}px` : width,
-        height: typeof height === "number" ? `${height}px` : height,
-        borderRadius: `${borderRadius}px`,
-        ...style,
-      }}
-    >
-      {/* Specular liquid gloss reflection gradient */}
-      <div
-        className="absolute inset-0 rounded-[inherit] pointer-events-none  to-transparent z-0"
-        aria-hidden="true"
-      />
-      {enableLiquidEffect && (
-        <LiquidGlassEffect
-          menuRef={menuRef || containerRef}
-          lensRef={lensRef || containerRef}
-          activeIndex={activeIndex}
-          activeColor={activeColor}
-          renderer={renderer}
-          refraction={refraction}
-          bevel={bevel}
-          dispersion={dispersion}
-          frost={frost}
-          shine={shine}
-          roundness={roundness}
-          tint={tint}
-          tintOpacity={tintOpacity}
-        />
-      )}
-      <div className="w-full h-full flex flex-col relative z-10">{children}</div>
-    </div>
-  );
+const VERTEX = `#version 300 es
+in vec2 position;
+out vec2 uv;
+void main() {
+  uv = position * 0.5 + 0.5;
+  gl_Position = vec4(position, 0.0, 1.0);
 }
+`;
+
+// Fixed rounded glass volume. No time, pointer, noise, springs or shape morphing.
+const FRAGMENT = `#version 300 es
+precision highp float;
+in vec2 uv;
+uniform sampler2D textureImage;
+uniform vec2 size, sourceOrigin, sourceSize;
+uniform float radius, aa, refractAmount, distortion, bevel, dispersion;
+uniform float thickness, reflection;
+uniform float frost, shine, angle, borderWidth, borderOpacity, hasSource, clipToSource;
+uniform vec4 surfaceTint;
+out vec4 fragColor;
+
+float outline(vec2 p) {
+  vec2 q = abs(p) - (size * 0.5 - vec2(radius));
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+}
+
+float field(vec3 p) {
+  float rim = max(0.02, min(thickness * 0.48, 24.0) * bevel);
+  vec2 relative = p.xy / max(size * 0.5, vec2(1.0));
+  float dome = 1.0 - distortion * 0.3 * clamp(dot(relative, relative) * 0.5, 0.0, 1.0);
+  vec2 q = vec2(outline(p.xy) + rim, abs(p.z) - thickness * 0.5 * dome + rim);
+  // Conservative stepping for the slightly curved front/back faces.
+  return (length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - rim) * 0.75;
+}
+
+vec3 surfaceNormal(vec3 p) {
+  float e = 0.12;
+  return normalize(vec3(
+    field(p + vec3(e, 0.0, 0.0)) - field(p - vec3(e, 0.0, 0.0)),
+    field(p + vec3(0.0, e, 0.0)) - field(p - vec3(0.0, e, 0.0)),
+    field(p + vec3(0.0, 0.0, e)) - field(p - vec3(0.0, 0.0, e))
+  ));
+}
+
+vec4 sampleScene(vec2 point) {
+  vec2 st = (point - sourceOrigin) / sourceSize;
+  if (clipToSource > 0.5 && (st.x < 0.0 || st.y < 0.0 || st.x > 1.0 || st.y > 1.0)) return vec4(0.0);
+  return texture(textureImage, vec2(clamp(st.x, 0.0, 1.0), 1.0 - clamp(st.y, 0.0, 1.0)));
+}
+
+vec4 smoothScene(vec2 point) {
+  if (frost < 0.001) return sampleScene(point);
+  float r = frost * 7.0;
+  return sampleScene(point) * 0.4 + (
+    sampleScene(point + vec2(r, 0.0)) + sampleScene(point - vec2(r, 0.0)) +
+    sampleScene(point + vec2(0.0, r)) + sampleScene(point - vec2(0.0, r))
+  ) * 0.15;
+}
+
+vec2 landing(vec3 p, vec3 direction, vec2 fallback) {
+  if (direction.z > -0.001) return fallback;
+  float travel = (-thickness * 0.5 - 1.0 - p.z) / direction.z;
+  return p.xy + size * 0.5 + direction.xy * max(travel, 0.0);
+}
+
+// Static studio lights, adapted from the original component's reflection model.
+vec3 studio(vec3 direction) {
+  vec2 a = vec2(atan(direction.x, direction.z), direction.y);
+  float key = (1.0 - smoothstep(0.22, 0.42, abs(a.x + 0.62))) *
+              (1.0 - smoothstep(0.12, 0.3, abs(a.y - 0.5)));
+  float strip = (1.0 - smoothstep(0.05, 0.12, abs(a.x - 0.95))) *
+                (1.0 - smoothstep(0.35, 0.8, abs(a.y - 0.05)));
+  return vec3(key + strip * 0.45);
+}
+
+void main() {
+  vec2 point = vec2(uv.x * size.x, (1.0 - uv.y) * size.y);
+  vec2 p = point - size * 0.5;
+  float d = outline(p);
+  float mask = 1.0 - smoothstep(-aa, aa, d);
+  if (mask < 0.001) { fragColor = vec4(0.0); return; }
+
+  vec3 ray = vec3(0.0, 0.0, -1.0);
+  vec3 entry = vec3(p, thickness * 0.5 + 1.0);
+  bool hit = false;
+  for (int i = 0; i < 48; i++) {
+    float distance = field(entry);
+    if (distance < 0.03) { hit = true; break; }
+    entry += ray * max(distance, 0.025);
+    if (entry.z < -thickness) break;
+  }
+  if (!hit) { fragColor = vec4(0.0); return; }
+
+  vec3 n = surfaceNormal(entry);
+  float ior = 1.0 + refractAmount * 0.5;
+  vec3 inside = refract(ray, n, 1.0 / ior);
+  vec3 exitPoint = entry;
+  vec3 exitNormal = -n;
+  vec3 outgoing = ray;
+  bool escaped = false;
+
+  // Only trace the interior when there is a real texture to refract.
+  if (hasSource > 0.5) {
+    exitPoint = entry + inside * 0.16;
+    for (int bounce = 0; bounce < 2; bounce++) {
+      bool reachedExit = false;
+      for (int i = 0; i < 64; i++) {
+        float distance = field(exitPoint);
+        if (distance > -0.025) { reachedExit = true; break; }
+        exitPoint += inside * max(-distance, 0.025);
+      }
+      if (!reachedExit) break;
+      exitNormal = surfaceNormal(exitPoint);
+      outgoing = refract(inside, -exitNormal, ior);
+      if (dot(outgoing, outgoing) > 0.001) { escaped = true; break; }
+      inside = reflect(inside, -exitNormal);
+      exitPoint += inside * 0.16;
+    }
+  }
+
+  float cosi = clamp(dot(-ray, n), 0.0, 1.0);
+  float f0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+  float fresnel = f0 + (1.0 - f0) * pow(1.0 - cosi, 5.0);
+  vec3 mirror = reflect(ray, n);
+  // Rotate only the fixed light direction, never the surface or its contents.
+  float rotation = angle - 5.49778714;
+  mirror.xy = mat2(cos(rotation), sin(rotation), -sin(rotation), cos(rotation)) * mirror.xy;
+  vec3 light = studio(mirror);
+  float edgeDepth = max(-d, 0.0);
+  float border = borderWidth > 0.0 ? 1.0 - smoothstep(borderWidth, borderWidth + aa, edgeDepth) : 0.0;
+  float highlightAlpha = clamp(shine * reflection * (fresnel * 0.32 + max(light.r, max(light.g, light.b)) * 0.5) +
+                               border * borderOpacity, 0.0, 0.9);
+  vec3 highlight = vec3(1.0);
+
+  if (hasSource > 0.5) {
+    vec2 samplePoint = escaped ? landing(exitPoint, outgoing, point) : point;
+    vec4 color = smoothScene(samplePoint);
+    if (escaped && dispersion > 0.001 && refractAmount > 0.001) {
+      vec3 red = refract(inside, -exitNormal, max(1.0, ior - dispersion * 0.03));
+      vec3 blue = refract(inside, -exitNormal, ior + dispersion * 0.03);
+      color.r = smoothScene(landing(exitPoint, red, samplePoint)).r;
+      color.b = smoothScene(landing(exitPoint, blue, samplePoint)).b;
+    }
+    color.rgb = mix(color.rgb, surfaceTint.rgb, surfaceTint.a);
+    float alpha = color.a + highlightAlpha * (1.0 - color.a);
+    vec3 premultiplied = color.rgb * color.a * (1.0 - highlightAlpha) + highlight * highlightAlpha;
+    fragColor = vec4(premultiplied / max(alpha, 0.0001), alpha * mask);
+  } else {
+    // No texture: honest surface lighting, with live DOM children untouched.
+    fragColor = vec4(highlight, highlightAlpha * mask);
+  }
+}
+`;
+
+const limit = (value: number, low: number, high: number) =>
+  Math.min(high, Math.max(low, Number.isFinite(value) ? value : low));
+
+function tintRgba(
+  value: string,
+  opacity: number,
+): [number, number, number, number] {
+  const hex = value.trim().replace(/^#/, "");
+  if (!/^(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(hex)) {
+    return [255, 255, 255, opacity];
+  }
+  const expanded = hex.length <= 4 ? [...hex].map((c) => c + c).join("") : hex;
+  const rgb = [0, 2, 4].map((i) => parseInt(expanded.slice(i, i + 2), 16));
+  const alpha =
+    expanded.length === 8 ? parseInt(expanded.slice(6), 16) / 255 : 1;
+  return [rgb[0], rgb[1], rgb[2], alpha * opacity];
+}
+
+/**
+ * Static WebGL 2 liquid-glass wrapper. Children remain live, clickable DOM.
+ * backdrop accepts a same-origin/CORS image, video or canvas; backdropRef aligns
+ * that texture with the visible element behind the wrapper. Arbitrary HTML
+ * cannot be read by WebGL. With no texture, only surface lighting is rendered.
+ * live only updates dynamic textures; it never moves, follows or wobbles glass.
+ * For a static canvas refresh: ref.current?.dispatchEvent(new Event("glass-refresh"));
+ */
+const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
+  function GlassSurface(
+    {
+      children,
+      className,
+      style,
+      width,
+      height,
+      borderRadius = 24,
+      enableLiquidEffect = true,
+      backdrop,
+      backdropRef,
+      backdropFit = "cover",
+      live = false,
+      refraction = 0.8,
+      thickness = 12,
+      reflection = 1,
+      distortion = 0.22,
+      bevel = 0.45,
+      dispersion = 0.12,
+      frost = 0.05,
+      shine = 0.75,
+      shineAngle = 315,
+      tint = "#ffffff",
+      tintOpacity = 0.045,
+      borderWidth = 1,
+      borderOpacity = 0.28,
+      maxDpr = 1.5,
+      onEffectError,
+      ...rest
+    },
+    forwardedRef,
+  ) {
+    const host = useRef<HTMLDivElement | null>(null);
+    const canvas = useRef<HTMLCanvasElement | null>(null);
+    const render = useRef<() => void>(() => {});
+    const options = useRef({
+      refraction,
+      thickness,
+      reflection,
+      distortion,
+      bevel,
+      dispersion,
+      frost,
+      shine,
+      shineAngle,
+      borderWidth,
+      borderOpacity,
+      maxDpr,
+      backdropFit,
+      live,
+      tint,
+      tintOpacity,
+    });
+    const refs = useRef({ backdropRef, onEffectError });
+    const [status, setStatus] = useState<"loading" | "webgl" | "fallback">(
+      "loading",
+    );
+    const [textured, setTextured] = useState(false);
+    const [solid, setSolid] = useState(false);
+
+    useEffect(() => {
+      const queries = [
+        matchMedia("(prefers-reduced-transparency: reduce)"),
+        matchMedia("(forced-colors: active)"),
+      ];
+      const update = () => setSolid(queries.some((q) => q.matches));
+      update();
+      queries.forEach((q) => q.addEventListener("change", update));
+      return () =>
+        queries.forEach((q) => q.removeEventListener("change", update));
+    }, []);
+
+    useEffect(() => {
+      options.current = {
+        refraction,
+        thickness,
+        reflection,
+        distortion,
+        bevel,
+        dispersion,
+        frost,
+        shine,
+        shineAngle,
+        borderWidth,
+        borderOpacity,
+        maxDpr,
+        backdropFit,
+        live,
+        tint,
+        tintOpacity,
+      };
+      refs.current = { backdropRef, onEffectError };
+      render.current();
+    }, [
+      refraction,
+      thickness,
+      reflection,
+      distortion,
+      bevel,
+      dispersion,
+      frost,
+      shine,
+      shineAngle,
+      borderWidth,
+      borderOpacity,
+      maxDpr,
+      backdropFit,
+      live,
+      backdropRef,
+      onEffectError,
+      borderRadius,
+      width,
+      height,
+      className,
+      style,
+      tint,
+      tintOpacity,
+    ]);
+
+    useEffect(() => {
+      const element = host.current;
+      const target = canvas.current;
+      if (!element || !target || !enableLiquidEffect || solid) return;
+      setStatus("loading");
+      setTextured(false);
+      const gl = target.getContext("webgl2", {
+        alpha: true,
+        premultipliedAlpha: false,
+        antialias: false,
+        stencil: false,
+        depth: false,
+      });
+      if (!gl) {
+        setStatus("fallback");
+        refs.current.onEffectError?.(
+          new Error("WebGL 2 is unavailable; using the CSS material fallback."),
+        );
+        return;
+      }
+      let program: WebGLProgram | null = null;
+      let buffer: WebGLBuffer | null = null;
+      let texture: WebGLTexture | null = null;
+      let source: Exclude<GlassBackdrop, string> | null = null;
+      let disposed = false,
+        lost = false,
+        visible = true,
+        frame = 0,
+        needsUpload = false;
+      let shaders: WebGLShader[] = [];
+      let cancelLoad = () => {};
+      const uniforms: Record<string, WebGLUniformLocation | null> = {};
+      const fail = (reason: unknown) => {
+        if (disposed) return;
+        setTextured(false);
+        setStatus("fallback");
+        refs.current.onEffectError?.(
+          reason instanceof Error ? reason : new Error(String(reason)),
+        );
+      };
+      function release() {
+        if (program) gl!.deleteProgram(program);
+        if (buffer) gl!.deleteBuffer(buffer);
+        if (texture) gl!.deleteTexture(texture);
+        shaders.forEach((s) => gl!.deleteShader(s));
+        program = null;
+        buffer = null;
+        texture = null;
+        shaders = [];
+      }
+      function compile(type: number, code: string) {
+        const shader = gl!.createShader(type);
+        if (!shader) throw new Error("Cannot allocate a glass shader.");
+        shaders.push(shader);
+        gl!.shaderSource(shader, code);
+        gl!.compileShader(shader);
+        if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS))
+          throw new Error(
+            gl!.getShaderInfoLog(shader) || "Glass shader failed to compile.",
+          );
+        return shader;
+      }
+      function sourceDimensions() {
+        if (!source) return [0, 0];
+        if (source instanceof HTMLVideoElement)
+          return [source.videoWidth, source.videoHeight];
+        if (source instanceof HTMLImageElement)
+          return [source.naturalWidth, source.naturalHeight];
+        return [source.width, source.height];
+      }
+      function draw() {
+        frame = 0;
+        if (disposed || lost || !program || !visible || document.hidden) return;
+        try {
+          const o = options.current;
+          const rect = element!.getBoundingClientRect();
+          const w = element!.clientWidth,
+            h = element!.clientHeight;
+          if (!w || !h) return;
+          const pixelLimit = Math.sqrt(2_000_000 / (w * h));
+          const dpr = Math.min(
+            devicePixelRatio || 1,
+            limit(o.maxDpr, 0.5, 3),
+            pixelLimit,
+          );
+          const rw = Math.max(1, Math.round(w * dpr)),
+            rh = Math.max(1, Math.round(h * dpr));
+          if (target!.width !== rw || target!.height !== rh) {
+            target!.width = rw;
+            target!.height = rh;
+          }
+          gl!.viewport(0, 0, rw, rh);
+          gl!.useProgram(program);
+          gl!.activeTexture(gl!.TEXTURE0);
+          gl!.bindTexture(gl!.TEXTURE_2D, texture);
+          const [sw, sh] = sourceDimensions();
+          const hasSource = !!source && sw > 0 && sh > 0;
+          if (
+            hasSource &&
+            (needsUpload || (o.live && !(source instanceof HTMLImageElement)))
+          ) {
+            gl!.pixelStorei(gl!.UNPACK_FLIP_Y_WEBGL, true);
+            gl!.texImage2D(
+              gl!.TEXTURE_2D,
+              0,
+              gl!.RGBA,
+              gl!.RGBA,
+              gl!.UNSIGNED_BYTE,
+              source!,
+            );
+            if (gl!.getError() !== gl!.NO_ERROR)
+              throw new Error("Glass texture upload failed.");
+            needsUpload = false;
+          }
+          const f = (name: string, value: number) =>
+            gl!.uniform1f(uniforms[name], value);
+          const v = (name: string, x: number, y: number) =>
+            gl!.uniform2f(uniforms[name], x, y);
+          v("size", w, h);
+          // Convert screen coordinates back to this surface's CSS-pixel space.
+          const sx = rect.width / w || 1,
+            sy = rect.height / h || 1;
+          const bg =
+            refs.current.backdropRef?.current?.getBoundingClientRect() || rect;
+          const bw = bg.width / sx,
+            bh = bg.height / sy;
+          let dw = bw,
+            dh = bh;
+          if (hasSource && o.backdropFit !== "stretch") {
+            const scale =
+              o.backdropFit === "cover"
+                ? Math.max(bw / sw, bh / sh)
+                : Math.min(bw / sw, bh / sh);
+            dw = sw * scale;
+            dh = sh * scale;
+          }
+          v(
+            "sourceOrigin",
+            (bg.left - rect.left) / sx + (bw - dw) / 2,
+            (bg.top - rect.top) / sy + (bh - dh) / 2,
+          );
+          v("sourceSize", Math.max(1, dw), Math.max(1, dh));
+          const cssRadius =
+            parseFloat(getComputedStyle(element!).borderTopLeftRadius) || 0;
+          f("radius", Math.min(cssRadius, w / 2, h / 2));
+          f("aa", 0.8 / Math.max(dpr, 0.1));
+          f("refractAmount", limit(o.refraction, 0, 2));
+          f(
+            "thickness",
+            Math.min(limit(o.thickness, 0.5, 100), Math.min(w, h) * 0.5),
+          );
+          f("reflection", limit(o.reflection, 0, 2));
+          f("distortion", limit(o.distortion, 0, 1));
+          f("bevel", limit(o.bevel, 0, 1));
+          f("dispersion", limit(o.dispersion, 0, 1));
+          f("frost", limit(o.frost, 0, 1));
+          f("shine", limit(o.shine, 0, 1));
+          f("angle", ((o.shineAngle % 360) * Math.PI) / 180);
+          f("borderWidth", limit(o.borderWidth, 0, 4));
+          f("borderOpacity", limit(o.borderOpacity, 0, 1));
+          const rgba = tintRgba(o.tint, limit(o.tintOpacity, 0, 1));
+          gl!.uniform4f(
+            uniforms.surfaceTint,
+            rgba[0] / 255,
+            rgba[1] / 255,
+            rgba[2] / 255,
+            rgba[3],
+          );
+          f("hasSource", hasSource ? 1 : 0);
+          f("clipToSource", o.backdropFit === "contain" ? 1 : 0);
+          gl!.uniform1i(uniforms.textureImage, 0);
+          gl!.clearColor(0, 0, 0, 0);
+          gl!.clear(gl!.COLOR_BUFFER_BIT);
+          gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
+          setStatus((previous) => (previous === "webgl" ? previous : "webgl"));
+          setTextured((previous) =>
+            previous === hasSource ? previous : hasSource,
+          );
+          if (o.live && source && !(source instanceof HTMLImageElement))
+            frame = requestAnimationFrame(draw);
+        } catch (error) {
+          fail(error);
+        }
+      }
+      function requestDraw() {
+        if (!frame && !disposed && !lost && visible && !document.hidden)
+          frame = requestAnimationFrame(draw);
+      }
+      function initialize() {
+        try {
+          lost = false;
+          release();
+          program = gl!.createProgram();
+          if (!program) throw new Error("Cannot allocate the glass program.");
+          gl!.attachShader(program, compile(gl!.VERTEX_SHADER, VERTEX));
+          gl!.attachShader(program, compile(gl!.FRAGMENT_SHADER, FRAGMENT));
+          gl!.linkProgram(program);
+          if (!gl!.getProgramParameter(program, gl!.LINK_STATUS))
+            throw new Error(
+              gl!.getProgramInfoLog(program) || "Glass program failed to link.",
+            );
+          gl!.useProgram(program);
+          buffer = gl!.createBuffer();
+          if (!buffer)
+            throw new Error("Cannot allocate the glass vertex buffer.");
+          gl!.bindBuffer(gl!.ARRAY_BUFFER, buffer);
+          gl!.bufferData(
+            gl!.ARRAY_BUFFER,
+            new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+            gl!.STATIC_DRAW,
+          );
+          const location = gl!.getAttribLocation(program, "position");
+          gl!.enableVertexAttribArray(location);
+          gl!.vertexAttribPointer(location, 2, gl!.FLOAT, false, 0, 0);
+          texture = gl!.createTexture();
+          if (!texture) throw new Error("Cannot allocate the glass texture.");
+          gl!.bindTexture(gl!.TEXTURE_2D, texture);
+          for (const [name, value] of [
+            [gl!.TEXTURE_MIN_FILTER, gl!.LINEAR],
+            [gl!.TEXTURE_MAG_FILTER, gl!.LINEAR],
+            [gl!.TEXTURE_WRAP_S, gl!.CLAMP_TO_EDGE],
+            [gl!.TEXTURE_WRAP_T, gl!.CLAMP_TO_EDGE],
+          ])
+            gl!.texParameteri(gl!.TEXTURE_2D, name, value);
+          gl!.texImage2D(
+            gl!.TEXTURE_2D,
+            0,
+            gl!.RGBA,
+            1,
+            1,
+            0,
+            gl!.RGBA,
+            gl!.UNSIGNED_BYTE,
+            new Uint8Array([0, 0, 0, 0]),
+          );
+          for (const name of [
+            "textureImage",
+            "size",
+            "sourceOrigin",
+            "sourceSize",
+            "radius",
+            "aa",
+            "refractAmount",
+            "thickness",
+            "reflection",
+            "distortion",
+            "bevel",
+            "dispersion",
+            "frost",
+            "shine",
+            "angle",
+            "borderWidth",
+            "borderOpacity",
+            "hasSource",
+            "surfaceTint",
+            "clipToSource",
+          ])
+            uniforms[name] = gl!.getUniformLocation(program, name);
+          needsUpload = true;
+          requestDraw();
+        } catch (error) {
+          release();
+          fail(error);
+        }
+      }
+      const onLost = (event: Event) => {
+        event.preventDefault();
+        lost = true;
+        program = null;
+        buffer = null;
+        texture = null;
+        shaders = [];
+        cancelAnimationFrame(frame);
+        frame = 0;
+        setTextured(false);
+        setStatus("fallback");
+      };
+      target.addEventListener("webglcontextlost", onLost);
+      target.addEventListener("webglcontextrestored", initialize);
+      render.current = requestDraw;
+      initialize();
+      if (backdrop) {
+        const image = typeof backdrop === "string" ? new Image() : backdrop;
+        if (typeof backdrop === "string" && image instanceof HTMLImageElement) {
+          image.crossOrigin = "anonymous";
+        }
+        const loaded = () => {
+          source = image;
+          needsUpload = true;
+          requestDraw();
+        };
+        const failed = () =>
+          fail(
+            new Error(
+              "Glass backdrop failed to load. Use a same-origin image or enable CORS.",
+            ),
+          );
+        const event = image instanceof HTMLVideoElement ? "loadeddata" : "load";
+        image.addEventListener(event, loaded);
+        image.addEventListener("error", failed);
+        cancelLoad = () => {
+          image.removeEventListener(event, loaded);
+          image.removeEventListener("error", failed);
+        };
+        if (typeof backdrop === "string")
+          (image as HTMLImageElement).src = backdrop;
+        else if (
+          image instanceof HTMLCanvasElement ||
+          (image instanceof HTMLImageElement && image.complete) ||
+          (image instanceof HTMLVideoElement && image.readyState >= 2)
+        )
+          loaded();
+      }
+      const resize = new ResizeObserver(requestDraw);
+      resize.observe(element);
+      if (refs.current.backdropRef?.current)
+        resize.observe(refs.current.backdropRef.current);
+      const intersection = new IntersectionObserver(([entry]) => {
+        visible = entry.isIntersecting;
+        if (visible) requestDraw();
+        else {
+          cancelAnimationFrame(frame);
+          frame = 0;
+        }
+      });
+      intersection.observe(element);
+      const refreshSource = () => {
+        needsUpload = true;
+        requestDraw();
+      };
+      element.addEventListener("glass-refresh", refreshSource);
+      window.addEventListener("resize", requestDraw);
+      window.addEventListener("scroll", requestDraw, true);
+      const onVisibility = () => {
+        if (document.hidden) {
+          cancelAnimationFrame(frame);
+          frame = 0;
+        } else requestDraw();
+      };
+      document.addEventListener("visibilitychange", onVisibility);
+      return () => {
+        disposed = true;
+        cancelAnimationFrame(frame);
+        cancelLoad();
+        render.current = () => {};
+        resize.disconnect();
+        intersection.disconnect();
+        element.removeEventListener("glass-refresh", refreshSource);
+        window.removeEventListener("resize", requestDraw);
+        window.removeEventListener("scroll", requestDraw, true);
+        document.removeEventListener("visibilitychange", onVisibility);
+        target.removeEventListener("webglcontextlost", onLost);
+        target.removeEventListener("webglcontextrestored", initialize);
+        release();
+      };
+    }, [backdrop, backdropRef, enableLiquidEffect, solid]);
+
+    const effectOn = enableLiquidEffect && !solid;
+    const blur = effectOn && !textured ? limit(frost, 0, 1) * 14 : 0;
+    const material = `rgba(${tintRgba(tint, limit(tintOpacity, 0, 1)).join(",")})`;
+    return (
+      <div
+        {...rest}
+        ref={(node) => {
+          host.current = node;
+          if (typeof forwardedRef === "function") forwardedRef(node);
+          else if (forwardedRef) forwardedRef.current = node;
+        }}
+        className={className}
+        data-glass-renderer={effectOn ? status : "fallback"}
+        data-glass-refraction={effectOn && textured ? "texture" : "none"}
+        style={{
+          position: "relative",
+          isolation: "isolate",
+          borderRadius,
+          width,
+          height,
+          ...style,
+          ...(solid ? { color: "CanvasText" } : {}),
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: -2,
+            pointerEvents: "none",
+            borderRadius: "inherit",
+            background: solid ? "Canvas" : material,
+            backdropFilter: blur > 0 ? `blur(${blur}px)` : undefined,
+            WebkitBackdropFilter: blur > 0 ? `blur(${blur}px)` : undefined,
+          }}
+        />
+        {effectOn && (
+          <canvas
+            ref={canvas}
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: -1,
+              width: "100%",
+              height: "100%",
+              pointerEvents: "none",
+              borderRadius: "inherit",
+              visibility: status === "webgl" ? "visible" : "hidden",
+            }}
+          />
+        )}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: -1,
+            pointerEvents: "none",
+            borderRadius: "inherit",
+            boxShadow: `inset 0 0 0 ${effectOn && status === "webgl" ? 0 : limit(borderWidth, 0, 4)}px rgba(255,255,255,${limit(borderOpacity, 0, 1)})`,
+            background:
+              !solid && (!effectOn || status !== "webgl")
+                ? `linear-gradient(${shineAngle}deg,rgba(255,255,255,${limit(shine, 0, 1) * 0.08}),transparent 55%)`
+                : undefined,
+          }}
+        />
+        {children}
+      </div>
+    );
+  },
+);
+
+export default GlassSurface;
