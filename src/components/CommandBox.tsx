@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getLocalCache } from "@/lib/client-cache";
 import type { ProjectListResult } from "@/lib/github/types";
+import { useGitHubStore } from "@/lib/store";
 import { useViewTransition } from "@/hooks/useViewTransition";
 import TransitionLink from "@/components/TransitionLink";
 
@@ -49,7 +50,14 @@ const STATIC_CANDIDATES: CommandCandidate[] = [
     type: "command",
     description: "Achievements & Milestones",
     route: "/home/achievements",
-    keywords: ["achievements", "awards", "milestones", "honors", "accomplishments", "recognition"],
+    keywords: [
+      "achievements",
+      "awards",
+      "milestones",
+      "honors",
+      "accomplishments",
+      "recognition",
+    ],
   },
   {
     name: "contact",
@@ -62,7 +70,8 @@ const STATIC_CANDIDATES: CommandCandidate[] = [
     name: "resume",
     type: "command",
     description: "Inspect Resume / CV (PDF)",
-    route: "https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link",
+    route:
+      "https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link",
     keywords: ["cv", "resume", "pdf", "profile", "curriculum", "credentials"],
   },
   // Default verified projects (related work)
@@ -103,9 +112,19 @@ const STATIC_CANDIDATES: CommandCandidate[] = [
   },
 ];
 
-const NAVIGATION_TABS = ["me", "skills", "projects", "experience", "achievements", "contact"];
+const NAVIGATION_TABS = [
+  "me",
+  "skills",
+  "projects",
+  "experience",
+  "achievements",
+  "contact",
+];
 
-function computeProbability(query: string, candidate: CommandCandidate): number {
+function computeProbability(
+  query: string,
+  candidate: CommandCandidate,
+): number {
   const q = query.trim().toLowerCase();
   const name = candidate.name.toLowerCase();
 
@@ -174,32 +193,32 @@ function computeProbability(query: string, candidate: CommandCandidate): number 
   return score;
 }
 
-function getInitialCandidates(): CommandCandidate[] {
-  if (typeof window === "undefined") return STATIC_CANDIDATES;
-  const cachedProjects = getLocalCache<ProjectListResult>("projects:SGOD-pro");
-  if (!cachedProjects || !cachedProjects.projects.length) return STATIC_CANDIDATES;
-
-  const merged = [...STATIC_CANDIDATES];
-  for (const p of cachedProjects.projects) {
-    if (!merged.some((m) => m.name.toLowerCase() === p.name.toLowerCase())) {
-      merged.push({
-        name: p.name,
-        type: "project",
-        description: p.description || "Public repository by @SGOD-pro",
-        route: `/home/projects?project=${encodeURIComponent(p.name)}&doc=readme`,
-      });
-    }
-  }
-  return merged;
-}
-
 function CommandBox() {
   const { navigate } = useViewTransition();
   const pathname = usePathname();
   const inputRef = useRef<HTMLInputElement>(null);
   const [commandValue, setCommandValue] = useState("");
   const [showError, setShowError] = useState(false);
-  const [dynamicCandidates] = useState<CommandCandidate[]>(getInitialCandidates);
+  const projectsData = useGitHubStore((s) => s.projectsData);
+
+  const dynamicCandidates = useMemo<CommandCandidate[]>(() => {
+    const merged = [...STATIC_CANDIDATES];
+    const projects =
+      projectsData?.projects ||
+      getLocalCache<ProjectListResult>("projects:SGOD-pro")?.projects ||
+      [];
+    for (const p of projects) {
+      if (!merged.some((m) => m.name.toLowerCase() === p.name.toLowerCase())) {
+        merged.push({
+          name: p.name,
+          type: "project",
+          description: p.description || "Public repository by @SGOD-pro",
+          route: `/home/projects?project=${encodeURIComponent(p.name)}&doc=readme`,
+        });
+      }
+    }
+    return merged;
+  }, [projectsData]);
 
   // Global typing listener: immediately activates input on any keystroke
   useEffect(() => {
@@ -265,15 +284,17 @@ function CommandBox() {
   // Inline ghost suggestion logic
   const isPrefixMatch = Boolean(
     bestMatch &&
-      bestMatch.name.toLowerCase().startsWith(trimmedValue) &&
-      bestMatch.name.toLowerCase() !== trimmedValue
+    bestMatch.name.toLowerCase().startsWith(trimmedValue) &&
+    bestMatch.name.toLowerCase() !== trimmedValue,
   );
 
-  const suggestionTail = isPrefixMatch && bestMatch
-    ? bestMatch.name.slice(trimmedValue.length)
-    : "";
+  const suggestionTail =
+    isPrefixMatch && bestMatch ? bestMatch.name.slice(trimmedValue.length) : "";
 
-  const executeNavigation = (targetName: string, matchedCandidate?: CommandCandidate | null) => {
+  const executeNavigation = (
+    targetName: string,
+    matchedCandidate?: CommandCandidate | null,
+  ) => {
     const normalized = targetName.trim().toLowerCase();
     if (!normalized) return;
 
@@ -289,7 +310,7 @@ function CommandBox() {
       dynamicCandidates.find(
         (c) =>
           c.name.toLowerCase() === normalized ||
-          (c.keywords && c.keywords.includes(normalized))
+          (c.keywords && c.keywords.includes(normalized)),
       ) ||
       bestMatch;
 
@@ -312,18 +333,16 @@ function CommandBox() {
       {/* Probability Guess & Related Work Indicator */}
       {bestMatch && trimmedValue && (
         <div className="flex flex-wrap items-center gap-2 mb-2 text-[11px] font-mono animate-fadeIn">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-command/15 border border-command/40 text-command font-semibold shadow-[0_0_12px_rgba(156,175,136,0.15)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-command animate-ping" />
-            <span className="text-muted/80">Guess:</span>
-            <span className="text-foreground font-bold">{bestMatch.name}</span>
-            <span className="text-command">({bestMatch.probability}%)</span>
-            <span className="text-muted/60 text-[9px] uppercase px-1 rounded bg-surface-secondary/60 border border-border">
-              {bestMatch.type}
-            </span>
-          </div>
-
           <span className="text-muted/70 text-[10px] hidden sm:inline">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-surface-secondary text-foreground text-[9px] border border-border font-mono">Tab ⇥</kbd> to complete · <kbd className="px-1.5 py-0.5 rounded bg-surface-secondary text-foreground text-[9px] border border-border font-mono">Enter ↵</kbd> to view
+            Press{" "}
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-secondary text-foreground text-[9px] border border-border font-mono">
+              Tab ⇥
+            </kbd>{" "}
+            to complete ·{" "}
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-secondary text-foreground text-[9px] border border-border font-mono">
+              Enter ↵
+            </kbd>{" "}
+            to view
           </span>
 
           {relatedWork.length > 0 && (
@@ -339,7 +358,10 @@ function CommandBox() {
                   }}
                   className="px-1.5 py-0.5 rounded border border-border bg-surface-secondary/40 text-muted hover:text-command hover:border-command/40 hover:bg-command/15 transition-colors cursor-pointer"
                 >
-                  {item.name} <span className="text-command/80 font-mono">({item.probability}%)</span>
+                  {item.name}{" "}
+                  <span className="text-command/80 font-mono">
+                    ({item.probability}%)
+                  </span>
                 </button>
               ))}
             </div>
@@ -353,7 +375,11 @@ function CommandBox() {
           role="alert"
           className="mb-2.5 text-xs rounded-md bg-danger/15 border border-danger/40 text-danger px-3 py-1.5 w-fit font-mono"
         >
-          Command &quot;{trimmedValue}&quot; not found. Type &quot;help&quot; or try: {STATIC_CANDIDATES.slice(0, 5).map(c => c.name).join(", ")}
+          Command &quot;{trimmedValue}&quot; not found. Type &quot;help&quot; or
+          try:{" "}
+          {STATIC_CANDIDATES.slice(0, 5)
+            .map((c) => c.name)
+            .join(", ")}
         </div>
       )}
 
@@ -386,14 +412,20 @@ function CommandBox() {
               }}
               onKeyDown={(event) => {
                 // Tab or ArrowRight fills the best matched prediction completely
-                if ((event.key === "Tab" || event.key === "ArrowRight") && bestMatch) {
+                if (
+                  (event.key === "Tab" || event.key === "ArrowRight") &&
+                  bestMatch
+                ) {
                   event.preventDefault();
                   setCommandValue(bestMatch.name);
                   return;
                 }
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  executeNavigation(bestMatch ? bestMatch.name : trimmedValue, bestMatch);
+                  executeNavigation(
+                    bestMatch ? bestMatch.name : trimmedValue,
+                    bestMatch,
+                  );
                   return;
                 }
                 if (event.key === "Escape") {
@@ -419,7 +451,10 @@ function CommandBox() {
         </div>
 
         {/* Navigation Quick Links */}
-        <nav aria-label="Section navigation" className="flex flex-wrap items-center gap-1.5 shrink-0">
+        <nav
+          aria-label="Section navigation"
+          className="flex flex-wrap items-center gap-1.5 shrink-0"
+        >
           {NAVIGATION_TABS.map((tag) => {
             const isActive = tag === currentRoute;
             const targetRoute = tag === "me" ? "/home" : `/home/${tag}`;

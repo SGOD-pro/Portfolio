@@ -10,22 +10,9 @@ import { useGitHubStore } from "@/lib/store";
 import TextReveal from "@/components/TextReveal";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import TerminalPrompt from "@/components/TerminalPrompt";
-
-const REPO_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
-
-function formatDate(isoString: string): string {
-  try {
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return isoString;
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return isoString;
-  }
-}
+import { formatDate } from "@/utils/formatDate";
+import { isValidRepoName } from "@/lib/github/api";
+import ProjectsLoading from "./loading";
 
 interface DocResponse {
   document: GitHubDocument;
@@ -501,7 +488,7 @@ function ProjectsContent() {
 
   // Validate project param against safety regex
   const validProject =
-    projectParam && REPO_NAME_REGEX.test(projectParam) ? projectParam : null;
+    projectParam && isValidRepoName(projectParam) ? projectParam : null;
 
   if (validProject) {
     return (
@@ -530,13 +517,7 @@ function ProjectsContent() {
 
 export default function Projects() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex flex-col grow p-4 font-mono text-xs text-muted animate-pulse">
-          Loading project telemetry...
-        </div>
-      }
-    >
+    <Suspense fallback={<ProjectsLoading />}>
       <ProjectsContent />
     </Suspense>
   );

@@ -34,6 +34,22 @@ function HomeLayout({
   const handleDotFrame = useCallback((source: HTMLCanvasElement) => {
     if (!source.width || !source.height) return;
 
+    // Skip canvas copy if reduced motion is preferred or document is hidden
+    if (
+      typeof window !== "undefined" &&
+      (document.hidden || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    ) {
+      return;
+    }
+
+    // Skip heavy CPU copy if neither glass panel is currently using the WebGL shader
+    const hasActiveWebGLGlass =
+      mainGlassRef.current?.getAttribute("data-glass-renderer") === "webgl" ||
+      sidebarGlassRef.current?.getAttribute("data-glass-renderer") === "webgl";
+    if (mainGlassRef.current && !hasActiveWebGLGlass) {
+      return;
+    }
+
     // Throttle WebGL backdrop snapshot to at most once every 32ms (~30fps)
     // This saves ~60% GPU/CPU texture upload overhead on low-end devices while keeping refraction fluid
     const now = performance.now();

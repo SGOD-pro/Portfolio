@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Separator } from "@heroui/react";
 import LineBox from "@/components/LineBox";
 import { StaticCodeFallback } from "@/components/StaticCodeFallback";
 import type { GitHubRepo } from "@/lib/github/types";
@@ -13,13 +12,14 @@ import { getLocalCache, setLocalCache } from "@/lib/client-cache";
 import { useGitHubStore } from "@/lib/store";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import AnimatedLanguageBar from "@/components/AnimatedLanguageBar";
+import { formatDate } from "@/utils/formatDate";
+import { isValidRepoName } from "@/lib/github/api";
+import RightSideLoading from "./loading";
 
 const CodeIcon3D = dynamic(() => import("@/components/3DCode"), {
   ssr: false,
   loading: () => <StaticCodeFallback color="#D63825" height={220} />,
 });
-
-const REPO_NAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
 
 function isValidHttpUrl(url: string | null | undefined): boolean {
   if (!url) return false;
@@ -31,20 +31,6 @@ function isValidHttpUrl(url: string | null | undefined): boolean {
   }
 }
 
-function formatDate(isoString: string): string {
-  try {
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return isoString;
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return isoString;
-  }
-}
-
 interface RepoDetailsResponse {
   repo: GitHubRepo;
   languages: Record<string, number>;
@@ -53,7 +39,6 @@ interface RepoDetailsResponse {
 }
 
 function ProjectMetadataSidebar({ project }: { project: string }) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const cacheKey = `repo:${project}`;
   const [data, setData] = useState<RepoDetailsResponse | null>(() => {
     return getLocalCache<RepoDetailsResponse>(cacheKey);
@@ -101,7 +86,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         <div className="h-3 w-28 bg-surface-secondary rounded" />
         <div className="h-5 w-40 bg-surface-secondary rounded" />
         <div className="h-12 w-full bg-surface-secondary/60 rounded" />
-        <Separator className="my-2 border-border" />
+        <div role="separator" aria-orientation="horizontal" className="my-2 border-b border-border w-full shrink-0" />
         <div className="h-20 w-full bg-surface-secondary/60 rounded" />
       </div>
     );
@@ -132,7 +117,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
   const hasHomepage = isValidHttpUrl(repo.homepage);
 
   return (
-    <div ref={containerRef} className="relative flex flex-col w-full h-full p-1 sm:p-2 font-mono text-[11px]">
+    <div className="relative flex flex-col w-full h-full p-1 sm:p-2 font-mono text-[11px]">
       <div className="flex items-center justify-between" data-reveal>
         <span className="text-[9px] uppercase tracking-wider text-muted font-medium">
           PROJECT TELEMETRY
@@ -181,7 +166,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         )}
       </div>
 
-      <Separator className="my-3 border-border" />
+      <div role="separator" aria-orientation="horizontal" className="my-3 border-b border-border w-full shrink-0" />
 
       {/* Document View Switcher */}
       <div data-reveal>
@@ -214,7 +199,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         </div>
       </div>
 
-      <Separator className="my-3 border-border" />
+      <div role="separator" aria-orientation="horizontal" className="my-3 border-b border-border w-full shrink-0" />
 
       {/* Programming Languages Breakdown */}
       <div data-reveal>
@@ -256,7 +241,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
         )}
       </div>
 
-      <Separator className="my-3 border-border" />
+      <div role="separator" aria-orientation="horizontal" className="my-3 border-b border-border w-full shrink-0" />
 
       {/* Repository Timeline / Dates */}
       <div data-reveal>
@@ -340,7 +325,7 @@ function DefaultSidebar() {
         </div>
       </div>
 
-      <Separator className="my-2 border-border" />
+      <div role="separator" aria-orientation="horizontal" className="my-2 border-b border-border w-full shrink-0" />
 
       {/* GitHub Profile Picture & Stats */}
       <div className="flex items-center gap-3.5 py-2.5 px-1 shrink-0">
@@ -359,7 +344,7 @@ function DefaultSidebar() {
               width={72}
               height={72}
               className="w-full h-full rounded-full object-cover"
-              loading="lazy"
+              priority
             />
           </div>
           <span
@@ -408,7 +393,7 @@ function DefaultSidebar() {
         </div>
       </div>
 
-      <Separator className="my-2 border-border" />
+      <div role="separator" aria-orientation="horizontal" className="my-2 border-b border-border w-full shrink-0" />
 
       <aside className="w-full">
         <h2 className="text-[9px] uppercase tracking-widest text-muted/80 font-mono font-medium">Connect</h2>
@@ -491,7 +476,7 @@ function RightSideContent() {
   const projectParam = searchParams.get("project");
 
   const sanitizedProject =
-    projectParam && REPO_NAME_REGEX.test(projectParam) ? projectParam : null;
+    projectParam && isValidRepoName(projectParam) ? projectParam : null;
 
   if (isProjectsRoute && sanitizedProject) {
     return <ProjectMetadataSidebar key={sanitizedProject} project={sanitizedProject} />;
@@ -502,7 +487,7 @@ function RightSideContent() {
 
 export default function RightSide() {
   return (
-    <Suspense fallback={<StaticCodeFallback color="#D63825" height={220} />}>
+    <Suspense fallback={<RightSideLoading />}>
       <RightSideContent />
     </Suspense>
   );

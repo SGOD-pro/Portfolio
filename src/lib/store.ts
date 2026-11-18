@@ -150,7 +150,7 @@ const store = createStore<GitHubState>({
         const res = await fetch("/api/github/activity");
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data?.activity)) {
+          if (Array.isArray(data?.activity) && data.activity.length > 0) {
             // Sort date-wise descending
             const sorted = [...data.activity].sort(
               (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -158,6 +158,8 @@ const store = createStore<GitHubState>({
             store.setState({ activity: sorted, activityLoading: false });
             setLocalCache("activity:SGOD-pro", sorted);
             return;
+          } else if (store.getState().activity.length === 0 && Array.isArray(data?.activity)) {
+            store.setState({ activity: data.activity, activityLoading: false });
           }
         }
       } catch {

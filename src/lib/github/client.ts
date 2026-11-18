@@ -59,14 +59,6 @@ class ConcurrencyLimiter {
       if (next) next();
     }
   }
-
-  getActiveCount(): number {
-    return this.active;
-  }
-
-  getQueueLength(): number {
-    return this.queue.length;
-  }
 }
 
 export const githubLimiter = new ConcurrencyLimiter(GITHUB_CONFIG.maxConcurrentRequests);

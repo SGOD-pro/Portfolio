@@ -7,8 +7,6 @@ import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import * as THREE from "three";
 import { StaticCodeFallback } from "./StaticCodeFallback";
 
-export { StaticCodeFallback };
-
 const SVG_STRING = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="currentColor" fill-rule="evenodd" d="M10.218 3.216a.75.75 0 0 0-1.436-.431l-3 10a.75.75 0 0 0 1.436.43zM4.53 4.97a.75.75 0 0 1 0 1.06L2.56 8l1.97 1.97a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 0-1.06l2.5-2.5a.75.75 0 0 1 1.06 0m6.94 6.06a.75.75 0 0 1 0-1.06L13.44 8l-1.97-1.97a.75.75 0 0 1 1.06-1.06l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06 0" clip-rule="evenodd"/></svg>`;
 
 type CodeIcon3DProps = {
@@ -286,16 +284,7 @@ function checkWebGL2Support(): boolean {
   }
 }
 
-const emptySubscribe = () => () => {};
-const getSnapshotTrue = () => true;
-const getSnapshotFalse = () => false;
-
-function useIsClient() {
-  return useSyncExternalStore(emptySubscribe, getSnapshotTrue, getSnapshotFalse);
-}
-
 function useCanRender3D() {
-  const isClient = useIsClient();
   return useSyncExternalStore(
     (callback) => {
       if (typeof window === "undefined") return () => {};
@@ -304,7 +293,6 @@ function useCanRender3D() {
       return () => mql.removeEventListener("change", callback);
     },
     () => {
-      if (!isClient) return false;
       const hasWebGL2 = checkWebGL2Support();
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       return hasWebGL2 && !prefersReducedMotion;

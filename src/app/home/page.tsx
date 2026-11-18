@@ -5,16 +5,7 @@ import { useEffect } from "react";
 import { useGitHubStore } from "@/lib/store";
 import TextReveal from "@/components/TextReveal";
 import TerminalPrompt from "@/components/TerminalPrompt";
-
-function formatDate(isoString: string): string {
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return isoString;
-  }
-}
+import { formatDate } from "@/utils/formatDate";
 
 function Home() {
   const activity = useGitHubStore((s) => s.activity);
@@ -43,10 +34,14 @@ function Home() {
 
           <div className="mt-4 space-y-3 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[62ch]">
             <p>
-              Hi, I&apos;m Souvik. I design and build production web architectures, type-safe fullstack platforms, and applied AI systems.
+              Hi, I&apos;m Souvik. I design and build production web
+              architectures, type-safe fullstack platforms, and applied AI
+              systems.
             </p>
             <p>
-              My focus is on resilient backend services, high-performance user interfaces with subtle motion, and real-time tooling that solves real engineering problems.
+              My focus is on resilient backend services, high-performance user
+              interfaces with subtle motion, and real-time tooling that solves
+              real engineering problems.
             </p>
           </div>
 
@@ -64,14 +59,6 @@ function Home() {
             >
               Contact Me
             </TransitionLink>
-            <a
-              href="https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-command/40 bg-command/10 px-4 py-2 text-sm font-sans font-medium text-command hover:bg-command/20 hover:border-command transition cursor-pointer"
-            >
-              Resume ↗
-            </a>
           </div>
         </section>
 
@@ -82,7 +69,9 @@ function Home() {
               <h2 className="text-xs uppercase tracking-wider text-muted font-sans font-semibold">
                 Recent Public Activity
               </h2>
-              <span className="text-[10px] text-muted font-mono">github.com/SGOD-pro</span>
+              <span className="text-[10px] text-muted font-mono">
+                github.com/SGOD-pro
+              </span>
             </div>
 
             {activityLoading ? (
@@ -111,7 +100,9 @@ function Home() {
                       <span className="text-foreground font-medium truncate max-w-[200px]">
                         {item.repo}
                       </span>
-                      <span className="text-muted text-[10px] shrink-0">{formatDate(item.date)}</span>
+                      <span className="text-muted text-[10px] shrink-0">
+                        {formatDate(item.date)}
+                      </span>
                     </div>
                     <p className="text-muted text-[11px] font-sans truncate">
                       {item.description || item.type}
