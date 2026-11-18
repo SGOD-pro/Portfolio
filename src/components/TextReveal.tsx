@@ -29,9 +29,9 @@ export default function TextReveal({
   text,
   className = "",
   as: Component = "h1",
-  delay = 0.02,
-  duration = 0.28,
-  stagger = 0.015,
+  delay = 0.06,
+  duration = 0.38,
+  stagger = 0.025,
 }: TextRevealProps) {
   const containerRef = useRef<HTMLElement>(null);
 
@@ -40,41 +40,47 @@ export default function TextReveal({
       if (!containerRef.current) return;
       if (typeof window === "undefined") return;
 
-      const letters = containerRef.current.querySelectorAll<HTMLSpanElement>(".reveal-char");
+      const letters =
+        containerRef.current.querySelectorAll<HTMLSpanElement>(".reveal-char");
       if (letters.length === 0) return;
 
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        gsap.set(letters, { opacity: 1, y: 0, clearProps: "opacity,transform" });
+        gsap.set(letters, {
+          opacity: 1,
+          y: 0,
+          clearProps: "opacity,transform",
+        });
         return;
       }
 
-      // Cap total stagger so the full reveal settles within ~350ms regardless
-      // of heading length. For short headings the passed stagger is used as-is.
-      const maxTotalMs = 350;
-      const cappedStagger = Math.min(stagger, (maxTotalMs - duration * 1000) / Math.max(1, letters.length) / 1000);
+      // Smooth organic character float-in capped so long headings don't lag
+      const effectiveStagger = Math.max(
+        0.008,
+        Math.min(stagger, 0.32 / Math.max(1, letters.length)),
+      );
 
       gsap.fromTo(
         letters,
         {
           opacity: 0,
-          y: 8,
+          y: 12,
         },
         {
           opacity: 1,
           y: 0,
           duration,
-          stagger: cappedStagger,
+          stagger: effectiveStagger,
           delay,
           ease: "power2.out",
           clearProps: "transform,will-change",
-        }
+        },
       );
     },
     {
       scope: containerRef,
       dependencies: [text, delay, duration, stagger],
       revertOnUpdate: true,
-    }
+    },
   );
 
   const words = text.split(" ");
@@ -89,10 +95,7 @@ export default function TextReveal({
         {words.map((word, wordIdx) => (
           <span key={wordIdx} className="inline-block whitespace-nowrap">
             {Array.from(word).map((char, charIdx) => (
-              <span
-                key={charIdx}
-                className="reveal-char inline-block"
-              >
+              <span key={charIdx} className="reveal-char inline-block">
                 {char}
               </span>
             ))}

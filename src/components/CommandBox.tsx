@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getLocalCache } from "@/lib/client-cache";
 import type { ProjectListResult } from "@/lib/github/types";
+import { useViewTransition } from "@/hooks/useViewTransition";
+import TransitionLink from "@/components/TransitionLink";
 
 interface CommandCandidate {
   name: string;
@@ -193,7 +194,7 @@ function getInitialCandidates(): CommandCandidate[] {
 }
 
 function CommandBox() {
-  const router = useRouter();
+  const { navigate } = useViewTransition();
   const pathname = usePathname();
   const inputRef = useRef<HTMLInputElement>(null);
   const [commandValue, setCommandValue] = useState("");
@@ -298,7 +299,7 @@ function CommandBox() {
       if (candidate.route.startsWith("http")) {
         window.open(candidate.route, "_blank", "noopener,noreferrer");
       } else {
-        router.push(candidate.route);
+        navigate(candidate.route);
       }
       return;
     }
@@ -423,7 +424,7 @@ function CommandBox() {
             const isActive = tag === currentRoute;
             const targetRoute = tag === "me" ? "/home" : `/home/${tag}`;
             return (
-              <Link
+              <TransitionLink
                 key={tag}
                 href={targetRoute}
                 aria-current={isActive ? "page" : undefined}
@@ -434,7 +435,7 @@ function CommandBox() {
                 }`}
               >
                 {tag}
-              </Link>
+              </TransitionLink>
             );
           })}
         </nav>

@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
-import type { GitHubActivityItem } from "@/lib/github/types";
-import { getLocalCache, setLocalCache } from "@/lib/client-cache";
-import { useReveal } from "@/hooks/useReveal";
+import TransitionLink from "@/components/TransitionLink";
+import { useEffect } from "react";
+import { useGitHubStore } from "@/lib/store";
 import TextReveal from "@/components/TextReveal";
 import TerminalPrompt from "@/components/TerminalPrompt";
 
@@ -19,87 +17,53 @@ function formatDate(isoString: string): string {
 }
 
 function Home() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [activity, setActivity] = useState<GitHubActivityItem[]>([]);
-  const [activityLoading, setActivityLoading] = useState(true);
-
-  useReveal(containerRef, [activity]);
+  const activity = useGitHubStore((s) => s.activity);
+  const activityLoading = useGitHubStore((s) => s.activityLoading);
+  const fetchActivity = useGitHubStore((s) => s.fetchActivity);
 
   useEffect(() => {
-    let active = true;
-    const cached = getLocalCache<GitHubActivityItem[]>("activity:SGOD-pro");
-    if (cached && cached.length > 0) {
-      queueMicrotask(() => {
-        if (active) {
-          setActivity(cached);
-          setActivityLoading(false);
-        }
-      });
-    }
-
-    fetch("/api/github/activity")
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to fetch activity"))))
-      .then((data) => {
-        if (active && Array.isArray(data.activity)) {
-          const items = data.activity.slice(0, 4);
-          setActivity(items);
-          setLocalCache("activity:SGOD-pro", items);
-        }
-      })
-      .catch(() => {
-        // Quiet fallback if offline or rate limited
-      })
-      .finally(() => {
-        if (active) setActivityLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+    fetchActivity();
+  }, [fetchActivity]);
 
   return (
-    <div ref={containerRef} className="relative flex flex-col grow">
+    <div className="relative flex flex-col grow">
       {/* Linux prompt */}
       <TerminalPrompt command="whoami" />
 
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 grow items-start mt-2">
         {/* Left Column: Hero & Narrative */}
-        <section data-reveal className="lg:col-span-7 flex flex-col">
+        <section className="lg:col-span-7 flex flex-col">
           <TextReveal
             text="Souvik Karmakar"
-            className="text-3xl sm:text-4xl lg:text-[46px] font-sans font-semibold tracking-[-0.02em] text-foreground leading-[1.12]"
+            className="text-3xl sm:text-4xl lg:text-5xl font-sans font-semibold tracking-tight text-foreground leading-[1.1]"
           />
-          <p className="mt-2 text-base sm:text-lg font-sans font-medium text-command leading-snug">
+          <p className="mt-2 text-sm sm:text-base font-mono text-command">
             Fullstack Developer &amp; Applied AI Engineer
           </p>
 
-          <div className="my-4 h-px w-full bg-border" />
+          <div className="mt-4 space-y-3 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[62ch]">
+            <p>
+              Hi, I&apos;m Souvik. I design and build production web architectures, type-safe fullstack platforms, and applied AI systems.
+            </p>
+            <p>
+              My focus is on resilient backend services, high-performance user interfaces with subtle motion, and real-time tooling that solves real engineering problems.
+            </p>
+          </div>
 
-          <p className="text-base font-sans text-muted leading-[1.65] max-w-[58ch]">
-            I build responsive web applications and applied AI tools. Focused on clean
-            component architectures, robust APIs, and practical developer experiences.
-          </p>
-
-          <p className="mt-3 text-sm font-sans text-muted/90 leading-[1.6] max-w-[58ch]">
-            Specialized in TypeScript, Next.js, Python, and modern cloud deployment with a strong
-            emphasis on performance and accessibility.
-          </p>
-
-          {/* Primary & Secondary Actions */}
-          <div className="flex flex-wrap items-center gap-3 mt-6">
-            <Link
+          {/* Action Row */}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <TransitionLink
               href="/home/projects"
               className="inline-flex items-center gap-1.5 rounded-lg bg-accent text-accent-foreground px-4 py-2 text-sm font-sans font-medium hover:bg-accent-hover transition shadow-[0_2px_12px_rgba(214,56,37,0.3)] cursor-pointer"
             >
-              View projects →
-            </Link>
-            <Link
+              Explore Projects →
+            </TransitionLink>
+            <TransitionLink
               href="/home/contact"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-secondary/40 px-4 py-2 text-sm font-sans font-medium text-foreground hover:bg-surface-secondary/80 hover:border-command/30 transition cursor-pointer"
             >
-              Get in touch
-            </Link>
+              Contact Me
+            </TransitionLink>
             <a
               href="https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link"
               target="_blank"
@@ -112,7 +76,7 @@ function Home() {
         </section>
 
         {/* Right Column: Public Engineering Activity */}
-        <section data-reveal className="lg:col-span-5 flex flex-col gap-4">
+        <section className="lg:col-span-5 flex flex-col gap-4">
           <div className="rounded-xl border border-border bg-surface/80 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <h2 className="text-xs uppercase tracking-wider text-muted font-sans font-semibold">
@@ -122,8 +86,19 @@ function Home() {
             </div>
 
             {activityLoading ? (
-              <div className="py-6 text-center text-xs text-muted font-sans animate-pulse">
-                Loading public activity...
+              <div className="mt-3 space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface-secondary/20 p-2.5 animate-pulse"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="h-3 w-32 bg-surface-secondary/80 rounded" />
+                      <div className="h-2.5 w-16 bg-surface-secondary/60 rounded" />
+                    </div>
+                    <div className="h-2.5 w-24 bg-surface-secondary/40 rounded" />
+                  </div>
+                ))}
               </div>
             ) : activity.length > 0 ? (
               <ul className="mt-3 space-y-2">

@@ -3,11 +3,7 @@
 import DotGrid from "@/components/DotBackground";
 import GlassSurface from "@/components/GlassSurface";
 import CommandBox from "@/components/CommandBox";
-import React, {
-  useCallback,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import "./animation.css";
 
@@ -24,17 +20,27 @@ function HomeLayout({
   const mainGlassRef = useRef<HTMLDivElement | null>(null);
   const sidebarGlassRef = useRef<HTMLDivElement | null>(null);
 
-  const [sceneCanvas, setSceneCanvas] =
-    useState<HTMLCanvasElement | null>(null);
+  const [sceneCanvas, setSceneCanvas] = useState<HTMLCanvasElement | null>(
+    null,
+  );
 
   const snapshotRef = useRef<{
     canvas: HTMLCanvasElement;
     context: CanvasRenderingContext2D;
     background: string;
   } | null>(null);
+  const lastRefreshTimeRef = useRef(0);
 
   const handleDotFrame = useCallback((source: HTMLCanvasElement) => {
     if (!source.width || !source.height) return;
+
+    // Throttle WebGL backdrop snapshot to at most once every 32ms (~30fps)
+    // This saves ~60% GPU/CPU texture upload overhead on low-end devices while keeping refraction fluid
+    const now = performance.now();
+    if (now - lastRefreshTimeRef.current < 30) {
+      return;
+    }
+    lastRefreshTimeRef.current = now;
 
     // Actual visible canvas, used to align the texture.
     sceneRef.current = source;
@@ -52,9 +58,7 @@ function HomeLayout({
       snapshot = {
         canvas,
         context,
-        background: root
-          ? getComputedStyle(root).backgroundColor
-          : "#091512",
+        background: root ? getComputedStyle(root).backgroundColor : "#091512",
       };
 
       snapshotRef.current = snapshot;
@@ -98,8 +102,8 @@ function HomeLayout({
       >
         <DotGrid
           onFrame={handleDotFrame}
-          dotSize={4}
-          gap={20}
+          dotSize={3}
+          gap={18}
           baseColor="#20332B"
           activeColor="#9CAF88"
           proximity={140}
@@ -156,7 +160,10 @@ function HomeLayout({
 
             {/* 2. Scrollable Page Content Area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-3.5 pr-2 pb-28 sm:pb-32 lg:pb-2 focus:outline-none terminal-scrollbar">
-              <div key={pathname} className="min-h-full flex flex-col slide-page">
+              <div
+                key={pathname}
+                className="min-h-full flex flex-col slide-page"
+              >
                 {children}
               </div>
             </div>

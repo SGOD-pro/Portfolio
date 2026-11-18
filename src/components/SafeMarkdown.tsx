@@ -38,18 +38,21 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
   };
 
   return (
-    <div className="my-3 rounded-lg border border-border bg-surface-secondary/40 overflow-hidden font-mono text-xs">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-surface-secondary/60 text-[10px] text-muted">
-        <span className="uppercase tracking-wider">{language || "text"}</span>
+    <div className="group/codeblock my-4 rounded-xl border border-white/[0.08] hover:border-command/40 bg-black/85 hover:bg-black/65 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.65)] overflow-hidden font-mono text-xs transition-[background-color,border-color,box-shadow] duration-300">
+      <div className="flex items-center justify-between px-3.5 py-2 border-b border-white/[0.06] bg-black/60 backdrop-blur-md text-[11px] font-mono text-muted">
+        <span className="uppercase tracking-widest text-[10px] text-command font-semibold flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-command" />
+          {language || "code"}
+        </span>
         <button
           type="button"
           onClick={handleCopy}
-          className="hover:text-foreground transition cursor-pointer"
+          className="text-muted hover:text-foreground text-[10px] uppercase font-mono px-2 py-0.5 rounded border border-white/[0.08] hover:border-command/40 bg-surface-secondary/40 hover:bg-surface-secondary/80 transition-all cursor-pointer"
         >
-          {copied ? "[COPIED]" : "[COPY]"}
+          {copied ? "COPIED ✓" : "COPY"}
         </button>
       </div>
-      <pre className="p-3 overflow-x-auto leading-relaxed text-foreground/90 font-mono text-[11px]">
+      <pre className="p-4 overflow-x-auto leading-relaxed text-[#E1E7DB] font-mono text-[11.5px] bg-transparent selection:bg-command/25">
         <code>{code}</code>
       </pre>
     </div>

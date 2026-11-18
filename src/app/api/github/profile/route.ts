@@ -7,7 +7,7 @@ export async function GET() {
     const data = await getPublicProfile();
     return NextResponse.json(data, {
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
     });
   } catch (error: unknown) {

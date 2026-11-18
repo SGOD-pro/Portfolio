@@ -52,7 +52,7 @@ export async function getPublicProfile(
       created_at: string;
     }>(`/users/${encodeURIComponent(username)}`, { customFetch: options?.customFetch });
 
-    let totalContributions = 833;
+    let totalContributions = 761;
     const token = getServerGitHubToken();
     if (token) {
       try {
@@ -78,8 +78,8 @@ export async function getPublicProfile(
           { customFetch: options?.customFetch }
         );
         const count = gqlData.user?.contributionsCollection?.contributionCalendar?.totalContributions;
-        if (typeof count === "number") {
-          totalContributions = Math.max(count, 833);
+        if (typeof count === "number" && count > 0) {
+          totalContributions = count;
         }
       } catch {
         // Fall back cleanly if GraphQL contributions query fails
@@ -571,19 +571,31 @@ export async function getArchitectureDocument(
 
   const cacheKey = `doc:${owner}/${repo}:architecture`;
   const cached = githubCache.get<GitHubDocument>(cacheKey);
-
   let lastError: Error | null = null;
-  for (const candidate of ARCHITECTURE_CANDIDATE_PATHS) {
-    try {
-      const result = await getRepositoryDocument(owner, repo, candidate, options);
-      githubCache.set(cacheKey, result.document, GITHUB_CONFIG.cacheTtlSeconds.document);
-      return result;
-    } catch (err: unknown) {
-      if (err instanceof GitHubApiError && err.statusCode === 404) {
-        lastError = err;
-        continue;
+
+  // Check candidate paths concurrently to eliminate sequential network round trips
+  const candidateResults = await Promise.allSettled(
+    ARCHITECTURE_CANDIDATE_PATHS.map((candidate) =>
+      getRepositoryDocument(owner, repo, candidate, options)
+    )
+  );
+
+  // Return the highest-priority successfully resolved candidate
+  for (const res of candidateResults) {
+    if (res.status === "fulfilled") {
+      githubCache.set(cacheKey, res.value.document, GITHUB_CONFIG.cacheTtlSeconds.document);
+      return res.value;
+    }
+  }
+
+  // If any candidate failed with a non-404 error (e.g. rate limit 403, server error 500), rethrow it
+  for (const res of candidateResults) {
+    if (res.status === "rejected") {
+      const err = res.reason;
+      if (!(err instanceof GitHubApiError && err.statusCode === 404)) {
+        throw err;
       }
-      throw err;
+      lastError = err;
     }
   }
 
@@ -650,7 +662,11 @@ export async function getRecentActivity(
       customFetch: options?.customFetch,
     });
 
-    const activity: GitHubActivityItem[] = (data || []).slice(0, 5).map((event) => {
+    const sortedData = [...(data || [])].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    const activity: GitHubActivityItem[] = sortedData.slice(0, 5).map((event) => {
       let desc = event.type.replace("Event", "");
       if (event.type === "PushEvent" && event.payload?.commits?.[0]?.message) {
         desc = `push: ${event.payload.commits[0].message.slice(0, 40)}`;

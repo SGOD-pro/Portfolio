@@ -5,7 +5,7 @@
 
 const CACHE_PREFIX = "portfolio_cache:";
 
-export function getLocalCache<T>(key: string, maxAgeMs = 30 * 60 * 1000): T | null {
+export function getLocalCache<T>(key: string, maxAgeMs = 5 * 60 * 1000): T | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(`${CACHE_PREFIX}${key}`);

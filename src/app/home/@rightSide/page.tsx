@@ -8,9 +8,9 @@ import Link from "next/link";
 import { Separator } from "@heroui/react";
 import LineBox from "@/components/LineBox";
 import { StaticCodeFallback } from "@/components/StaticCodeFallback";
-import type { GitHubRepo, GitHubProfile } from "@/lib/github/types";
+import type { GitHubRepo } from "@/lib/github/types";
 import { getLocalCache, setLocalCache } from "@/lib/client-cache";
-import { useReveal } from "@/hooks/useReveal";
+import { useGitHubStore } from "@/lib/store";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import AnimatedLanguageBar from "@/components/AnimatedLanguageBar";
 
@@ -64,8 +64,6 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const activeDoc = searchParams.get("doc") || "readme";
-
-  useReveal(containerRef, [project, data]);
 
   useEffect(() => {
     let active = true;
@@ -300,31 +298,12 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
 }
 
 function DefaultSidebar() {
-  const [profile, setProfile] = useState<GitHubProfile | null>(null);
+  const profile = useGitHubStore((s) => s.profile);
+  const fetchProfile = useGitHubStore((s) => s.fetchProfile);
 
   useEffect(() => {
-    let active = true;
-    const cached = getLocalCache<GitHubProfile>("profile:SGOD-pro");
-    if (cached) {
-      queueMicrotask(() => {
-        if (active) setProfile(cached);
-      });
-    }
-
-    fetch("/api/github/profile")
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed"))))
-      .then((data) => {
-        if (active && data?.profile) {
-          setProfile(data.profile);
-          setLocalCache("profile:SGOD-pro", data.profile);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      active = false;
-    };
-  }, []);
+    fetchProfile();
+  }, [fetchProfile]);
 
   const displayName = profile?.name
     ? profile.name.toLowerCase() === "souvik karmakar"
@@ -333,9 +312,9 @@ function DefaultSidebar() {
     : "Souvik Karmakar";
 
   return (
-    <div className="relative flex flex-col w-full h-full p-2 sm:p-3 font-mono group">
+    <div className="relative flex flex-col w-full h-full p-2 sm:p-3 font-mono">
       {/* 3D Code Block */}
-      <div className="h-[170px] w-full relative flex items-center justify-center overflow-hidden shrink-0">
+      <div className="group/code h-[170px] w-full relative flex items-center justify-center overflow-hidden shrink-0">
         <CodeIcon3D
           extrudeDepth={1.2}
           color="#D63825"
@@ -353,13 +332,12 @@ function DefaultSidebar() {
           height={170}
           width="100%"
         />
-      </div>
-
-      {/* Hover text under the 3D block */}
-      <div className="text-center min-h-[22px] py-1 transition-all">
-        <p className="text-[11px] tracking-wider font-mono text-muted/90 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          CODE WITH <span className="text-accent font-bold">CAFFEINE</span>
-        </p>
+        {/* Hover text under the 3D block */}
+        <div className="absolute bottom-1 left-0 right-0 text-center pointer-events-none transition-all">
+          <p className="text-[11px] tracking-wider font-mono text-muted/90 opacity-0 group-hover/code:opacity-100 transition-opacity duration-200">
+            CODE WITH <span className="text-accent font-bold">CAFFEINE</span>
+          </p>
+        </div>
       </div>
 
       <Separator className="my-2 border-border" />
@@ -408,7 +386,7 @@ function DefaultSidebar() {
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
             <span className="inline-flex items-center gap-1" title="Contributions in the last year">
               <strong className="text-command font-bold" suppressHydrationWarning>
-                <AnimatedNumber value={profile?.totalContributions || 833} />
+                <AnimatedNumber value={profile?.totalContributions || 761} />
               </strong>
               <span className="text-muted/80">contribs</span>
             </span>
@@ -440,9 +418,9 @@ function DefaultSidebar() {
               href="https://github.com/SGOD-pro"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
+              className="flex w-full min-w-0 flex-col gap-0.5 group/link py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
             >
-              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
+              <span className="text-muted text-xs tracking-wider uppercase group-hover/link:text-accent font-sans font-semibold transition-colors">
                 GitHub
               </span>
               <span className="truncate w-full text-command lowercase text-xs font-mono">
@@ -456,9 +434,9 @@ function DefaultSidebar() {
               href="https://www.linkedin.com/in/souvik-karmakar-578097274/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
+              className="flex w-full min-w-0 flex-col gap-0.5 group/link py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
             >
-              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
+              <span className="text-muted text-xs tracking-wider uppercase group-hover/link:text-accent font-sans font-semibold transition-colors">
                 LinkedIn
               </span>
               <span className="truncate w-full text-command lowercase text-xs font-mono">
@@ -470,9 +448,9 @@ function DefaultSidebar() {
           <LineBox className="w-full">
             <Link
               href="mailto:souvik.dev07@gmail.com"
-              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
+              className="flex w-full min-w-0 flex-col gap-0.5 group/link py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
             >
-              <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
+              <span className="text-muted text-xs tracking-wider uppercase group-hover/link:text-accent font-sans font-semibold transition-colors">
                 Email
               </span>
               <span className="truncate w-full text-command lowercase text-xs font-mono">
@@ -486,11 +464,11 @@ function DefaultSidebar() {
               href="https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full min-w-0 flex-col gap-0.5 group py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
+              className="flex w-full min-w-0 flex-col gap-0.5 group/link py-1 focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-1 rounded transition-colors"
               title="Open Souvik Karmakar's official Resume in Google Drive"
             >
               <div className="flex items-center justify-between">
-                <span className="text-muted text-xs tracking-wider uppercase group-hover:text-accent font-sans font-semibold transition-colors">
+                <span className="text-muted text-xs tracking-wider uppercase group-hover/link:text-accent font-sans font-semibold transition-colors">
                   Resume / CV
                 </span>
                 <span className="text-[10px] text-command font-mono">[PDF ↗]</span>

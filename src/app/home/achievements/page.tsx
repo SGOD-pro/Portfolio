@@ -1,14 +1,26 @@
 "use client";
 
-import Link from "next/link";
-import { useRef, useState } from "react";
-import { useReveal } from "@/hooks/useReveal";
+import TransitionLink from "@/components/TransitionLink";
+import { useState, useEffect } from "react";
+import { useGitHubStore } from "@/lib/store";
 import TextReveal from "@/components/TextReveal";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import TerminalPrompt from "@/components/TerminalPrompt";
-import type { CertificateData } from "@/components/PdfCertificateViewer";
 
-export type Certificate = CertificateData;
+export interface Certificate {
+  id: string;
+  title: string;
+  issuer: string;
+  category: "Hackathon" | "Course Completion" | "Professional Certification";
+  recipient: string;
+  date: string;
+  fileName: string;
+  fileSize: string;
+  credentialId?: string;
+  description: string;
+  skills: string[];
+  pdfUrl?: string;
+}
 
 const RESUME_URL =
   "https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link";
@@ -93,10 +105,13 @@ const CERTIFICATES: Certificate[] = [
 ];
 
 export default function AchievementsPage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useReveal(containerRef);
-
   const [activeCategory, setActiveCategory] = useState<"all" | "hackathons" | "courses">("all");
+  const profile = useGitHubStore((s) => s.profile);
+  const fetchProfile = useGitHubStore((s) => s.fetchProfile);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const filteredCerts = CERTIFICATES.filter((cert) => {
     if (activeCategory === "hackathons") return cert.category === "Hackathon";
@@ -106,7 +121,7 @@ export default function AchievementsPage() {
   });
 
   return (
-    <div ref={containerRef} className="relative flex flex-col grow">
+    <div className="relative flex flex-col grow">
       {/* Linux prompt */}
       <TerminalPrompt
         command="achievements"
@@ -125,7 +140,7 @@ export default function AchievementsPage() {
               text="Achievements & Credentials"
               className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
             />
-            <p data-reveal className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
+            <p className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
               Verified hackathon awards, official course completion accreditations, and engineering credentials for Souvik Karmakar.
             </p>
           </div>
@@ -182,11 +197,11 @@ export default function AchievementsPage() {
       </header>
 
       {/* Overview Stat Badges with GSAP Number Counters */}
-      <div data-reveal className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
         <div className="rounded-xl border border-border bg-surface/60 backdrop-blur-sm p-3 font-mono">
           <span className="text-[10px] uppercase text-muted tracking-wider block">Contributions</span>
           <span className="text-lg sm:text-xl font-bold text-command">
-            <AnimatedNumber value={833} suffix="+" />
+            <AnimatedNumber value={profile?.totalContributions || 761} suffix="+" />
           </span>
           <span className="text-[10px] text-muted/70 block mt-0.5">Verified activity</span>
         </div>
@@ -214,7 +229,7 @@ export default function AchievementsPage() {
       </div>
 
       {/* Verified Hackathon & Course Certificates Grid */}
-      <section className="mb-8" data-reveal>
+      <section className="mb-8">
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border font-mono text-xs">
           <span className="h-2 w-2 rounded-full bg-command" />
           <h2 className="text-xs uppercase tracking-wider font-semibold text-foreground">
@@ -232,7 +247,6 @@ export default function AchievementsPage() {
               href={cert.pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              data-reveal
               className="group rounded-xl border border-border bg-surface/80 backdrop-blur-md p-4 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex flex-col justify-between transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0 cursor-pointer text-left block"
               title={`Open ${cert.title} in Google Drive`}
             >
@@ -292,7 +306,7 @@ export default function AchievementsPage() {
         </div>
       </section>
 
-      <footer data-reveal className="mt-8 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3 text-xs font-sans text-muted">
+      <footer className="mt-8 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3 text-xs font-sans text-muted">
         <span>Looking to review complete engineering background or projects?</span>
         <div className="flex items-center gap-3">
           <a
@@ -304,12 +318,12 @@ export default function AchievementsPage() {
             Download Resume (PDF) ↗
           </a>
           <span className="text-muted/40">·</span>
-          <Link
+          <TransitionLink
             href="/home/projects"
             className="text-command font-mono hover:underline inline-flex items-center gap-1"
           >
             View all projects →
-          </Link>
+          </TransitionLink>
         </div>
       </footer>
     </div>

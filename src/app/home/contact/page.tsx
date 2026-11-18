@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef } from "react";
-import { useReveal } from "@/hooks/useReveal";
+import { useState } from "react";
 import TextReveal from "@/components/TextReveal";
 import TerminalPrompt from "@/components/TerminalPrompt";
 
@@ -16,9 +15,6 @@ type FormState = {
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
 function Contact() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useReveal(containerRef);
-
   const [formState, setFormState] = useState<FormState>({
     name: "",
     email: "",
@@ -77,7 +73,7 @@ function Contact() {
   };
 
   return (
-    <div ref={containerRef} className="relative flex flex-col grow">
+    <div className="relative flex flex-col grow">
       {/* Linux prompt at top left */}
       <TerminalPrompt command="contact" />
 
@@ -86,7 +82,7 @@ function Contact() {
           text="Contact"
           className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
         />
-        <p data-reveal className="mt-0.5 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
+        <p className="mt-0.5 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
           Reach out for software engineering opportunities, contract projects, or technical collaboration.
         </p>
       </header>
@@ -94,7 +90,6 @@ function Contact() {
       <div className="grid gap-4 lg:grid-cols-12 grow items-start">
         {/* Contact Form Section */}
         <section
-          data-reveal
           className="lg:col-span-7 rounded-xl border border-border bg-surface/80 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
         >
           <h2 className="text-base sm:text-lg font-sans font-semibold text-foreground mb-3">
@@ -203,7 +198,7 @@ function Contact() {
         </section>
 
         {/* Direct Channels Sidebar */}
-        <aside className="lg:col-span-5 flex flex-col gap-4" data-reveal>
+        <aside className="lg:col-span-5 flex flex-col gap-4">
           <div className="rounded-xl border border-border bg-surface/80 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
             <h2 className="text-xs uppercase tracking-wider text-muted font-sans font-semibold pb-3 border-b border-border">
               Direct Channels

@@ -1,7 +1,5 @@
 "use client";
 
-import { useRef } from "react";
-import { useReveal } from "@/hooks/useReveal";
 import TextReveal from "@/components/TextReveal";
 import TerminalPrompt from "@/components/TerminalPrompt";
 
@@ -71,11 +69,8 @@ const skillCategories: SkillCategory[] = [
 ];
 
 function Skills() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useReveal(containerRef);
-
   return (
-    <div ref={containerRef} className="relative flex flex-col grow">
+    <div className="relative flex flex-col grow">
       {/* Linux prompt at top */}
       <TerminalPrompt command="skills" />
 
@@ -84,7 +79,7 @@ function Skills() {
           text="Skills & Capabilities"
           className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
         />
-        <p data-reveal className="mt-1 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
+        <p className="mt-1 text-xs sm:text-sm font-sans text-muted leading-relaxed max-w-[65ch]">
           Core technical competencies, production frameworks, and engineering tools across fullstack and applied AI development.
         </p>
       </header>
@@ -94,7 +89,6 @@ function Skills() {
         {skillCategories.map((group) => (
           <section
             key={group.title}
-            data-reveal
             className="rounded-xl border border-border bg-surface/80 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] flex flex-col justify-between transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0"
           >
             <div>

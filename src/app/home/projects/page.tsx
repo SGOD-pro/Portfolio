@@ -1,12 +1,12 @@
 "use client";
 
-import React, { Suspense, useEffect, useState, useRef } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import TransitionLink from "@/components/TransitionLink";
 import SafeMarkdown from "@/components/SafeMarkdown";
 import type { GitHubRepo, ProjectListResult, GitHubDocument } from "@/lib/github/types";
 import { getLocalCache, setLocalCache } from "@/lib/client-cache";
-import { useReveal } from "@/hooks/useReveal";
+import { useGitHubStore } from "@/lib/store";
 import TextReveal from "@/components/TextReveal";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import TerminalPrompt from "@/components/TerminalPrompt";
@@ -45,19 +45,37 @@ function ProjectReaderView({
 }) {
   const docPath = doc === "architecture" ? "architecture" : "README.md";
   const cacheKey = `doc:${project}:${docPath}`;
+  const notFoundKey = `404:${project}:${docPath}`;
+
+  const isCached404 = typeof window !== "undefined" && Boolean(getLocalCache<boolean>(notFoundKey));
 
   const [docData, setDocData] = useState<DocResponse | null>(() => {
     return getLocalCache<DocResponse>(cacheKey);
   });
   const [loading, setLoading] = useState(() => {
+    if (isCached404) return false;
     return !getLocalCache<DocResponse>(cacheKey);
   });
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(() => {
+    return isCached404 ? 404 : null;
+  });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let active = true;
+
+    // Instant return if previously verified as 404 and not explicitly retried
+    if (isCached404 && retryCount === 0) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (active) {
+        setLoading(true);
+        setErrorStatus(null);
+      }
+    });
 
     fetch(`/api/github/repo/${encodeURIComponent(project)}/doc?path=${encodeURIComponent(docPath)}`)
       .then(async (res) => {
@@ -78,24 +96,25 @@ function ProjectReaderView({
       })
       .catch((err: Error & { status?: number }) => {
         if (active) {
-          setErrorStatus(err.status || 500);
+          const status = err.status || 500;
+          setErrorStatus(status);
           setErrorMessage(err.message);
           setLoading(false);
+          if (status === 404) {
+            setLocalCache(notFoundKey, true);
+          }
         }
       });
 
     return () => {
       active = false;
     };
-  }, [project, docPath, retryCount, cacheKey]);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  useReveal(containerRef, [project, doc, docData?.document.path], { resetOnDepsChange: true });
+  }, [project, docPath, retryCount, cacheKey, notFoundKey, isCached404]);
 
   const selectedRepo = allProjects.find((p) => p.name.toLowerCase() === project.toLowerCase());
 
   return (
-    <div ref={containerRef} className="flex flex-col grow">
+    <div className="flex flex-col grow">
       {/* Command Prompt Breadcrumb */}
       <TerminalPrompt
         command="cat"
@@ -108,15 +127,15 @@ function ProjectReaderView({
       />
 
       {/* Reader Controls: Back Link, Document Switcher Tabs, Quick Switcher */}
-      <div data-reveal className="mt-2 flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border font-sans text-xs">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border font-sans text-xs">
         <div className="flex items-center gap-2">
-          <Link
+          <TransitionLink
             href="/home/projects"
             className="rounded-lg border border-border bg-surface-secondary/40 px-3 py-1.5 font-medium text-muted hover:text-foreground hover:border-command/40 transition flex items-center gap-1.5"
           >
             <span>←</span>
             <span>All Projects</span>
-          </Link>
+          </TransitionLink>
 
           {/* Quick project switcher pills */}
           {allProjects.length > 1 && (
@@ -125,7 +144,7 @@ function ProjectReaderView({
               {allProjects.map((p) => {
                 const isCurrent = p.name.toLowerCase() === project.toLowerCase();
                 return (
-                  <Link
+                  <TransitionLink
                     key={p.name}
                     href={`/home/projects?project=${encodeURIComponent(p.name)}&doc=${doc}`}
                     className={`rounded-md px-2 py-1 text-xs font-mono transition ${
@@ -135,7 +154,7 @@ function ProjectReaderView({
                     }`}
                   >
                     {p.name}
-                  </Link>
+                  </TransitionLink>
                 );
               })}
             </div>
@@ -144,7 +163,7 @@ function ProjectReaderView({
 
         {/* Doc Switcher Tabs */}
         <div className="flex items-center gap-2 font-mono text-xs">
-          <Link
+          <TransitionLink
             href={`/home/projects?project=${encodeURIComponent(project)}&doc=readme`}
             aria-selected={doc !== "architecture"}
             className={`rounded-lg px-3 py-1.5 transition ${
@@ -154,8 +173,8 @@ function ProjectReaderView({
             }`}
           >
             README.md
-          </Link>
-          <Link
+          </TransitionLink>
+          <TransitionLink
             href={`/home/projects?project=${encodeURIComponent(project)}&doc=architecture`}
             aria-selected={doc === "architecture"}
             className={`rounded-lg px-3 py-1.5 transition ${
@@ -165,18 +184,46 @@ function ProjectReaderView({
             }`}
           >
             Architecture
-          </Link>
+          </TransitionLink>
         </div>
       </div>
 
       {/* Reader Document Area */}
       <div className="mt-3 flex-1">
         {loading && (
-          <div className="space-y-2.5 p-4 rounded-xl border border-border bg-surface/30 animate-pulse">
-            <div className="h-4 w-48 bg-surface-secondary rounded" />
-            <div className="h-3 w-full bg-surface-secondary/60 rounded" />
-            <div className="h-3 w-5/6 bg-surface-secondary/60 rounded" />
-            <div className="h-20 w-full bg-surface-secondary/60 rounded mt-3" />
+          <div className="space-y-4 p-5 rounded-xl border border-border bg-surface/30 animate-pulse">
+            {/* Title Skeleton */}
+            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+              <div className="h-2 w-2 rounded-full bg-command/50" />
+              <div className="h-5 w-56 bg-surface-secondary rounded" />
+              <div className="ml-auto h-3 w-20 bg-surface-secondary/50 rounded" />
+            </div>
+
+            {/* Paragraph lines Skeleton */}
+            <div className="space-y-2 mt-3">
+              <div className="h-3.5 w-full bg-surface-secondary/60 rounded" />
+              <div className="h-3.5 w-11/12 bg-surface-secondary/50 rounded" />
+              <div className="h-3.5 w-4/5 bg-surface-secondary/40 rounded" />
+            </div>
+
+            {/* Code Block Skeleton */}
+            <div className="my-4 rounded-xl border border-white/5 bg-black/60 p-4 space-y-2">
+              <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                <div className="h-3 w-16 bg-surface-secondary rounded" />
+                <div className="h-3 w-10 bg-surface-secondary/40 rounded" />
+              </div>
+              <div className="h-3 w-3/4 bg-surface-secondary/40 rounded" />
+              <div className="h-3 w-1/2 bg-surface-secondary/30 rounded" />
+              <div className="h-3 w-2/3 bg-surface-secondary/30 rounded" />
+            </div>
+
+            {/* Subheading & list items Skeleton */}
+            <div className="h-4 w-36 bg-surface-secondary rounded mt-4" />
+            <div className="space-y-1.5 pl-4">
+              <div className="h-3 w-5/6 bg-surface-secondary/50 rounded" />
+              <div className="h-3 w-4/6 bg-surface-secondary/40 rounded" />
+              <div className="h-3 w-3/4 bg-surface-secondary/40 rounded" />
+            </div>
           </div>
         )}
 
@@ -195,12 +242,12 @@ function ProjectReaderView({
                 : `No README file was found in the default branch of "${project}".`}
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
-              <Link
+              <TransitionLink
                 href={`/home/projects?project=${encodeURIComponent(project)}&doc=readme`}
                 className="rounded border border-command/60 bg-command/15 px-3 py-1.5 text-xs text-command hover:bg-command/25 transition"
               >
                 View README.md
-              </Link>
+              </TransitionLink>
               {selectedRepo?.htmlUrl && (
                 <a
                   href={selectedRepo.htmlUrl}
@@ -245,7 +292,6 @@ function ProjectReaderView({
         {/* Successfully Loaded Document */}
         {!loading && docData && (
           <div
-            data-reveal
             className="rounded-xl border border-border bg-surface/90 backdrop-blur-md p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.08)]"
           >
             <SafeMarkdown
@@ -291,11 +337,8 @@ function ProjectListView({
   error: string | null;
   onRetry: () => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useReveal(containerRef, [loading]);
-
   return (
-    <div ref={containerRef} className="relative flex flex-col grow">
+    <div className="relative flex flex-col grow">
       {/* Linux prompt */}
       <TerminalPrompt
         command="projects"
@@ -316,7 +359,7 @@ function ProjectListView({
           delay={0.16}
           stagger={0.02}
         />
-        <p data-reveal className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
+        <p className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
           Selected software repositories, verified documentation, and architectural designs.
         </p>
       </header>
@@ -356,7 +399,7 @@ function ProjectListView({
 
       {/* Honest Empty State */}
       {!loading && !error && (!projectsData || projectsData.projects.length === 0) && (
-        <div className="rounded-xl border border-border bg-surface/80 p-8 text-center" data-reveal>
+        <div className="rounded-xl border border-border bg-surface/80 p-8 text-center">
           <p className="text-sm font-sans font-medium text-foreground">
             No Public Repositories Found
           </p>
@@ -381,7 +424,6 @@ function ProjectListView({
           {projectsData.projects.map((project) => (
             <article
               key={project.name}
-              data-reveal
               className="group relative rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(247,247,242,0.04)] transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface flex flex-col justify-between min-w-0"
             >
               <div>
@@ -418,12 +460,12 @@ function ProjectListView({
                   </span>
                 </div>
 
-                <Link
+                <TransitionLink
                   href={`/home/projects?project=${encodeURIComponent(project.name)}&doc=readme`}
                   className="rounded-lg bg-accent text-accent-foreground px-3.5 py-1.5 text-xs font-sans font-medium hover:bg-accent-hover transition shadow-[0_2px_8px_rgba(214,56,37,0.25)] cursor-pointer shrink-0"
                 >
                   Inspect ↗
-                </Link>
+                </TransitionLink>
               </div>
             </article>
           ))}
@@ -439,83 +481,23 @@ function ProjectsContent() {
   const projectParam = searchParams.get("project");
   const docParam = searchParams.get("doc") || "readme";
 
-  const [projectsData, setProjectsData] = useState<ProjectListResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const projectsData = useGitHubStore((s) => s.projectsData);
+  const loading = useGitHubStore((s) => s.projectsLoading);
+  const fetchProjects = useGitHubStore((s) => s.fetchProjects);
   const [error, setError] = useState<string | null>(null);
-  const activeRequestIdRef = React.useRef(0);
-  const abortControllerRef = React.useRef<AbortController | null>(null);
-
-  const requestProjects = React.useCallback((controller: AbortController, reqId: number) => {
-    fetch("/api/github/projects", { signal: controller.signal })
-      .then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || `HTTP ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((json: ProjectListResult) => {
-        if (reqId === activeRequestIdRef.current) {
-          if (json.error && (!json.projects || json.projects.length === 0)) {
-            setError(json.error);
-          } else {
-            setProjectsData(json);
-            setLocalCache("projects:SGOD-pro", json);
-            setError(null);
-          }
-          setLoading(false);
-        }
-      })
-      .catch((err: Error) => {
-        if (err.name === "AbortError") return;
-        if (reqId === activeRequestIdRef.current) {
-          // If we already have cached projects, keep displaying them
-          const cached = getLocalCache<ProjectListResult>("projects:SGOD-pro");
-          if (cached && cached.projects && cached.projects.length > 0) {
-            setProjectsData(cached);
-            setError(null);
-          } else {
-            setError(err.message || "Failed to load projects");
-          }
-          setLoading(false);
-        }
-      });
-  }, []);
-
-  const handleRetry = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const reqId = ++activeRequestIdRef.current;
-    setError(null);
-    setLoading(true);
-    requestProjects(controller, reqId);
-  };
 
   useEffect(() => {
-    let active = true;
-    const cached = getLocalCache<ProjectListResult>("projects:SGOD-pro");
-    if (cached && cached.projects && cached.projects.length > 0) {
-      queueMicrotask(() => {
-        if (active) {
-          setProjectsData(cached);
-          setLoading(false);
-        }
-      });
-    }
+    fetchProjects().catch((err: Error) => {
+      setError(err.message || "Failed to load projects");
+    });
+  }, [fetchProjects]);
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const reqId = ++activeRequestIdRef.current;
-    requestProjects(controller, reqId);
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [requestProjects]);
+  const handleRetry = () => {
+    setError(null);
+    fetchProjects().catch((err: Error) => {
+      setError(err.message || "Failed to load projects");
+    });
+  };
 
   // Validate project param against safety regex
   const validProject =

@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import { useReveal } from "@/hooks/useReveal";
 import TextReveal from "@/components/TextReveal";
 import TerminalPrompt from "@/components/TerminalPrompt";
 
@@ -31,11 +29,8 @@ const focusAreas = [
 ];
 
 function Experience() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useReveal(containerRef);
-
   return (
-    <div ref={containerRef} className="relative flex flex-col grow">
+    <div className="relative flex flex-col grow">
       {/* Linux prompt at top left */}
       <TerminalPrompt command="experience" />
 
@@ -46,11 +41,11 @@ function Experience() {
               text="Experience"
               className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
             />
-            <p data-reveal className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
+            <p className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
               Technical background, engineering project focus, and core developer practices.
             </p>
           </div>
-          <div data-reveal className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-mono">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-mono">
             <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
             <span>Open for engineering roles</span>
           </div>
@@ -62,7 +57,6 @@ function Experience() {
         {focusAreas.map((area) => (
           <section
             key={area.title}
-            data-reveal
             className="rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-border">
@@ -90,7 +84,7 @@ function Experience() {
         ))}
       </div>
 
-      <footer data-reveal className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border text-xs font-sans text-muted">
+      <footer className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border text-xs font-sans text-muted">
         <span>Looking to discuss fullstack or applied AI opportunities?</span>
         <Link
           href="/home/contact"
