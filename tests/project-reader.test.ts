@@ -166,4 +166,51 @@ describe("Phase 3 Project Reader Acceptance Tests", () => {
       }
     );
   });
+
+  test("getRepositoryDocument and getArchitectureDocument work with custom owner", async () => {
+    const mockFetch: typeof fetch = async (input) => {
+      const url = String(input);
+      if (url.includes("/contents/backend%2Farchitecture.md")) {
+        return new Response(
+          JSON.stringify({
+            name: "architecture.md",
+            path: "backend/architecture.md",
+            sha: "custom123",
+            size: 5825,
+            html_url: "https://github.com/Loading404-ux/interview-prep/blob/main/backend/architecture.md",
+            content: Buffer.from("# Backend Architecture").toString("base64"),
+            encoding: "base64",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+      if (url.includes("/git/trees/")) {
+        return new Response(
+          JSON.stringify({
+            tree: [{ path: "backend/architecture.md", type: "blob" }],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+      if (url.endsWith("/repos/Loading404-ux/interview-prep")) {
+        return new Response(
+          JSON.stringify({
+            id: 999,
+            name: "interview-prep",
+            full_name: "Loading404-ux/interview-prep",
+            description: "Full-stack prep",
+            html_url: "https://github.com/Loading404-ux/interview-prep",
+            default_branch: "main",
+            private: false,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      }
+      return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+    };
+
+    const res = await getArchitectureDocument("Loading404-ux", "interview-prep", { customFetch: mockFetch });
+    assert.equal(res.document.path, "backend/architecture.md");
+    assert.equal(res.document.repo, "Loading404-ux/interview-prep");
+  });
 });

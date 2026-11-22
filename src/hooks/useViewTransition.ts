@@ -17,9 +17,13 @@ export function useViewTransition() {
   const [isPending, startReactTransition] = useTransition();
   const isNavigatingRef = useRef(false);
 
-  // Reset navigation lock on every route change
+  // Reset navigation lock and clean up any exit classes on every route change
   useEffect(() => {
     isNavigatingRef.current = false;
+    const pageEl = document.querySelector<HTMLElement>(".slide-page");
+    if (pageEl) {
+      pageEl.classList.remove("slide-page-exit");
+    }
   }, [pathname]);
 
   const prefetch = useCallback(
@@ -44,10 +48,28 @@ export function useViewTransition() {
         return;
       }
 
-      // If already on the same target route, do not re-transition
       const currentPath = pathname.split("?")[0];
       const targetPath = href.split("?")[0];
-      if (href === pathname || (currentPath === targetPath && !href.includes("?"))) {
+
+      // In-page navigation (e.g. updating query params like ?project=... or ?doc=... or clearing them)
+      if (currentPath === targetPath) {
+        const currentFull =
+          typeof window !== "undefined"
+            ? window.location.pathname + window.location.search
+            : pathname;
+        if (href === currentFull) {
+          return;
+        }
+
+        // Ensure page container is not hidden by an exit class
+        const pageEl = document.querySelector<HTMLElement>(".slide-page");
+        if (pageEl) {
+          pageEl.classList.remove("slide-page-exit");
+        }
+
+        startReactTransition(() => {
+          router.push(href);
+        });
         return;
       }
 

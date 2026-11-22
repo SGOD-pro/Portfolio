@@ -50,10 +50,19 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
   const searchParams = useSearchParams();
   const activeDoc = searchParams.get("doc") || "readme";
 
+  const projectsData = useGitHubStore((s) => s.projectsData);
+  const selectedRepo = projectsData?.projects.find(
+    (p) => p.name.toLowerCase() === project.toLowerCase()
+  );
+  const repoOwner = selectedRepo?.fullName?.includes("/")
+    ? selectedRepo.fullName.split("/")[0]
+    : undefined;
+
   useEffect(() => {
     let active = true;
 
-    fetch(`/api/github/repo/${encodeURIComponent(project)}`)
+    const ownerParam = repoOwner ? `?owner=${encodeURIComponent(repoOwner)}` : "";
+    fetch(`/api/github/repo/${encodeURIComponent(project)}${ownerParam}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -78,7 +87,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
     return () => {
       active = false;
     };
-  }, [project, cacheKey]);
+  }, [project, repoOwner, cacheKey]);
 
   if (loading) {
     return (

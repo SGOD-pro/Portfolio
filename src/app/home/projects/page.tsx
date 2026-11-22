@@ -32,39 +32,32 @@ function ProjectReaderView({
 }) {
   const docPath = doc === "architecture" ? "architecture" : "README.md";
   const cacheKey = `doc:${project}:${docPath}`;
-  const notFoundKey = `404:${project}:${docPath}`;
 
-  const isCached404 = typeof window !== "undefined" && Boolean(getLocalCache<boolean>(notFoundKey));
+  const selectedRepo = allProjects.find((p) => p.name.toLowerCase() === project.toLowerCase());
+  const repoOwner = selectedRepo?.fullName?.includes("/")
+    ? selectedRepo.fullName.split("/")[0]
+    : undefined;
 
   const [docData, setDocData] = useState<DocResponse | null>(() => {
     return getLocalCache<DocResponse>(cacheKey);
   });
   const [loading, setLoading] = useState(() => {
-    if (isCached404) return false;
     return !getLocalCache<DocResponse>(cacheKey);
   });
-  const [errorStatus, setErrorStatus] = useState<number | null>(() => {
-    return isCached404 ? 404 : null;
-  });
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let active = true;
 
-    // Instant return if previously verified as 404 and not explicitly retried
-    if (isCached404 && retryCount === 0) {
-      return;
+    if (!docData) {
+      setLoading(true);
+      setErrorStatus(null);
     }
 
-    queueMicrotask(() => {
-      if (active) {
-        setLoading(true);
-        setErrorStatus(null);
-      }
-    });
-
-    fetch(`/api/github/repo/${encodeURIComponent(project)}/doc?path=${encodeURIComponent(docPath)}`)
+    const ownerParam = repoOwner ? `&owner=${encodeURIComponent(repoOwner)}` : "";
+    fetch(`/api/github/repo/${encodeURIComponent(project)}/doc?path=${encodeURIComponent(docPath)}${ownerParam}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -87,18 +80,13 @@ function ProjectReaderView({
           setErrorStatus(status);
           setErrorMessage(err.message);
           setLoading(false);
-          if (status === 404) {
-            setLocalCache(notFoundKey, true);
-          }
         }
       });
 
     return () => {
       active = false;
     };
-  }, [project, docPath, retryCount, cacheKey, notFoundKey, isCached404]);
-
-  const selectedRepo = allProjects.find((p) => p.name.toLowerCase() === project.toLowerCase());
+  }, [project, docPath, repoOwner, retryCount, cacheKey, docData]);
 
   return (
     <div className="flex flex-col grow">
@@ -235,6 +223,13 @@ function ProjectReaderView({
               >
                 View README.md
               </TransitionLink>
+              <button
+                type="button"
+                onClick={() => setRetryCount((c) => c + 1)}
+                className="rounded border border-border bg-surface-secondary/40 px-3 py-1.5 text-xs text-muted hover:text-foreground transition cursor-pointer"
+              >
+                Retry
+              </button>
               {selectedRepo?.htmlUrl && (
                 <a
                   href={selectedRepo.htmlUrl}
