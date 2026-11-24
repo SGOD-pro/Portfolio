@@ -15,11 +15,14 @@ export function useViewTransition() {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startReactTransition] = useTransition();
-  const isNavigatingRef = useRef(false);
+  const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset navigation lock and clean up any exit classes on every route change
+  // Reset pending timers and clean up any exit classes on every route change
   useEffect(() => {
-    isNavigatingRef.current = false;
+    if (navTimerRef.current) {
+      clearTimeout(navTimerRef.current);
+      navTimerRef.current = null;
+    }
     const pageEl = document.querySelector<HTMLElement>(".slide-page");
     if (pageEl) {
       pageEl.classList.remove("slide-page-exit");
@@ -81,8 +84,11 @@ export function useViewTransition() {
         return;
       }
 
-      if (isNavigatingRef.current) return;
-      isNavigatingRef.current = true;
+      // Cancel any superseded navigation timer so rapid taps always win
+      if (navTimerRef.current) {
+        clearTimeout(navTimerRef.current);
+        navTimerRef.current = null;
+      }
 
       // Start prefetching target route immediately
       router.prefetch(href);
@@ -95,17 +101,16 @@ export function useViewTransition() {
         pageEl.classList.add("slide-page-exit");
 
         // Fast micro-delay (50ms) to let the exit glide start without stalling navigation
-        setTimeout(() => {
+        navTimerRef.current = setTimeout(() => {
+          navTimerRef.current = null;
           startReactTransition(() => {
             router.push(href);
-            isNavigatingRef.current = false;
           });
         }, 50);
       } else {
         // Reduced motion or fallback
         startReactTransition(() => {
           router.push(href);
-          isNavigatingRef.current = false;
         });
       }
     },

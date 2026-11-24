@@ -644,6 +644,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
         requestDraw();
       };
       element.addEventListener("glass-refresh", refreshSource);
+      element.addEventListener("glass-redraw", requestDraw);
       window.addEventListener("resize", requestDraw);
       window.addEventListener("scroll", requestDraw, true);
       const onVisibility = () => {
@@ -661,6 +662,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
         resize.disconnect();
         intersection.disconnect();
         element.removeEventListener("glass-refresh", refreshSource);
+        element.removeEventListener("glass-redraw", requestDraw);
         window.removeEventListener("resize", requestDraw);
         window.removeEventListener("scroll", requestDraw, true);
         document.removeEventListener("visibilitychange", onVisibility);
