@@ -29,7 +29,17 @@ const STATIC_CANDIDATES: CommandCandidate[] = [
     type: "command",
     description: "Skills & Capabilities",
     route: "/home/skills",
-    keywords: ["capabilities", "tech", "stack", "tools", "languages"],
+    keywords: [
+      "capabilities",
+      "tech",
+      "stack",
+      "tools",
+      "languages",
+      "achievements",
+      "awards",
+      "credentials",
+      "certificates",
+    ],
   },
   {
     name: "projects",
@@ -44,20 +54,6 @@ const STATIC_CANDIDATES: CommandCandidate[] = [
     description: "Career Timeline",
     route: "/home/experience",
     keywords: ["jobs", "timeline", "history", "career", "roles"],
-  },
-  {
-    name: "achievements",
-    type: "command",
-    description: "Achievements & Milestones",
-    route: "/home/achievements",
-    keywords: [
-      "achievements",
-      "awards",
-      "milestones",
-      "honors",
-      "accomplishments",
-      "recognition",
-    ],
   },
   {
     name: "contact",
@@ -117,7 +113,6 @@ const NAVIGATION_TABS = [
   "skills",
   "projects",
   "experience",
-  "achievements",
   "contact",
 ];
 

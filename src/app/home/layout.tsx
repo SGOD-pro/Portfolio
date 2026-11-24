@@ -3,6 +3,7 @@
 import DotGrid from "@/components/DotBackground";
 import GlassSurface from "@/components/GlassSurface";
 import CommandBox from "@/components/CommandBox";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import React, { useCallback, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import "./animation.css";
@@ -19,6 +20,13 @@ function HomeLayout({
 
   const mainGlassRef = useRef<HTMLDivElement | null>(null);
   const sidebarGlassRef = useRef<HTMLDivElement | null>(null);
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = 0;
+    }
+  }, [pathname]);
 
   const [sceneCanvas, setSceneCanvas] = useState<HTMLCanvasElement | null>(
     null,
@@ -131,7 +139,7 @@ function HomeLayout({
       </div>
 
       {/* Main Full-Page Shell */}
-      <main className="flex-1 w-full p-2 sm:p-3 md:p-4 flex flex-col lg:flex-row gap-3 md:gap-4 relative z-10 lg:h-full lg:max-h-full lg:overflow-hidden pb-36 sm:pb-40 lg:pb-4">
+      <main className="flex-1 w-full p-2 sm:p-3 md:p-4 flex flex-col lg:flex-row gap-3 md:gap-4 relative z-10 lg:h-full lg:max-h-full lg:overflow-hidden pb-16 sm:pb-20 lg:pb-4">
         {/* Left Panel: Consistent Shell (Header + Content + CommandBox Footer) */}
         <section className="flex-1 flex flex-col min-w-0 min-h-[500px] lg:h-full lg:overflow-hidden relative z-20">
           <GlassSurface
@@ -175,7 +183,10 @@ function HomeLayout({
             </header>
 
             {/* 2. Scrollable Page Content Area */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-3.5 pr-2 pb-28 sm:pb-32 lg:pb-2 focus:outline-none terminal-scrollbar">
+            <div
+              ref={contentScrollRef}
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-2.5 lg:py-3.5 pr-0 lg:pr-2 pb-20 lg:pb-2 focus:outline-none terminal-scrollbar"
+            >
               <div
                 key={pathname}
                 className="min-h-full flex flex-col slide-page"
@@ -184,15 +195,18 @@ function HomeLayout({
               </div>
             </div>
 
-            {/* 3. Consistent Shell Footer (Search / Nav CommandBox) - Fixed with Glass + Frost on Mobile */}
-            <footer className="fixed bottom-0 left-0 right-0 z-[100] bg-background/90 backdrop-blur-2xl border-t border-border px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] lg:static lg:z-auto lg:bg-transparent lg:backdrop-blur-none lg:border-t lg:border-border lg:pt-3 lg:pb-2 lg:px-0 lg:shadow-none shrink-0">
+            {/* 3. Consistent Shell Footer (Search / Nav CommandBox) - Desktop Only */}
+            <footer className="hidden lg:block border-t border-border pt-3 pb-2 px-0 shrink-0">
               <CommandBox />
             </footer>
           </GlassSurface>
+
+          {/* Mobile Bottom Dock with Sliding Pill (Mobile Only) */}
+          <MobileBottomNav />
         </section>
 
         {/* Right Panel: Sidebar (3D Logo + Connect Links) */}
-        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-10 lg:mb-0 relative z-10">
+        <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col h-auto lg:h-full lg:overflow-hidden mb-2 lg:mb-0 relative z-10">
           <GlassSurface
             ref={sidebarGlassRef}
             backdrop={sceneCanvas ?? undefined}

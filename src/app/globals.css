@@ -59,6 +59,7 @@
     opacity: 0;
     clip-path: inset(0 100% 0 0);
   }
+
   to {
     opacity: 1;
     clip-path: inset(0 0 0 0);
@@ -70,6 +71,7 @@
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -77,9 +79,12 @@
 }
 
 @keyframes rootCursorBlink {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }
@@ -98,6 +103,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .root-command-reveal,
   .root-heading-entrance,
   .root-cursor-blink {
@@ -163,6 +169,7 @@
     opacity: 0;
     clip-path: inset(0 100% 0 0);
   }
+
   to {
     opacity: 1;
     clip-path: inset(0 0 0 0);
@@ -174,6 +181,7 @@
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -181,9 +189,12 @@
 }
 
 @keyframes rootCursorBlink {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }
@@ -202,6 +213,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .root-command-reveal,
   .root-heading-entrance,
   .root-cursor-blink {
@@ -239,6 +251,7 @@
     var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo,
     Monaco, Consolas, monospace;
 }
+
 .cursor-blink {
   position: relative;
   display: inline-block;
@@ -257,13 +270,16 @@
   transform-origin: center;
   border-radius: 2px;
 }
+
 @keyframes cursor-expand {
   0% {
     transform: translateY(-50%) scaleY(0);
   }
+
   50% {
     transform: translateY(-50%) scaleY(1);
   }
+
   100% {
     transform: translateY(-50%) scaleY(0);
   }
@@ -339,16 +355,19 @@ html:not([data-scroll-behavior="smooth"]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   html,
   body,
   * {
     scroll-behavior: auto !important;
   }
+
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
   }
+
   .cursor-blink::after {
     animation: none !important;
     transform: translateY(-50%) scaleY(1) !important;
@@ -363,26 +382,18 @@ html:not([data-scroll-behavior="smooth"]) {
 .projects-grid {
   background-color: var(--background);
   background-image:
-    radial-gradient(
-      circle at top left,
+    radial-gradient(circle at top left,
       color-mix(in oklch, var(--accent) 18%, transparent),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 30% 70%,
+      transparent 55%),
+    radial-gradient(circle at 30% 70%,
       color-mix(in oklch, var(--command) 14%, transparent),
-      transparent 60%
-    ),
-    repeating-linear-gradient(
-      0deg,
+      transparent 60%),
+    repeating-linear-gradient(0deg,
       color-mix(in oklch, var(--segment) 18%, transparent) 0 1px,
-      transparent 1px 26px
-    ),
-    repeating-linear-gradient(
-      90deg,
+      transparent 1px 26px),
+    repeating-linear-gradient(90deg,
       color-mix(in oklch, var(--segment) 18%, transparent) 0 1px,
-      transparent 1px 26px
-    );
+      transparent 1px 26px);
   opacity: 0.55;
   pointer-events: none;
   z-index: 0;
@@ -391,30 +402,67 @@ html:not([data-scroll-behavior="smooth"]) {
 .contact-shell {
   isolation: isolate;
 }
+
 .contact-grid {
   background-color: var(--background);
   background-image:
-    radial-gradient(
-      circle at 15% 15%,
+    radial-gradient(circle at 15% 15%,
       color-mix(in oklch, var(--command) 24%, transparent),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 85% 20%,
+      transparent 55%),
+    radial-gradient(circle at 85% 20%,
       color-mix(in oklch, var(--accent) 18%, transparent),
-      transparent 60%
-    ),
-    repeating-linear-gradient(
-      0deg,
+      transparent 60%),
+    repeating-linear-gradient(0deg,
       color-mix(in oklch, var(--segment) 16%, transparent) 0 1px,
-      transparent 1px 28px
-    ),
-    repeating-linear-gradient(
-      90deg,
+      transparent 1px 28px),
+    repeating-linear-gradient(90deg,
       color-mix(in oklch, var(--segment) 16%, transparent) 0 1px,
-      transparent 1px 28px
-    );
+      transparent 1px 28px);
   opacity: 0.65;
   pointer-events: none;
   z-index: 0;
+}
+
+/* ==========================================================================
+   Skeleton Shimmer Animation
+   ========================================================================== */
+@keyframes skeletonShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-secondary);
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.04) 20%,
+      rgba(255, 255, 255, 0.14) 50%,
+      rgba(255, 255, 255, 0.04) 80%,
+      rgba(255, 255, 255, 0) 100%);
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none !important;
+    display: none !important;
+  }
 }

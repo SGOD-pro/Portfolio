@@ -3,9 +3,10 @@
 import React, { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(useGSAP);
+  gsap.registerPlugin(useGSAP, ScrollTrigger);
 }
 
 export interface AnimatedNumberProps {
@@ -16,6 +17,7 @@ export interface AnimatedNumberProps {
   prefix?: string;
   suffix?: string;
   delay?: number;
+  scrollTrigger?: boolean;
 }
 
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -37,6 +39,7 @@ export default function AnimatedNumber({
   delay = 0.05,
   prefix = "",
   suffix = "",
+  scrollTrigger = false,
 }: AnimatedNumberProps) {
   const containerRef = useRef<HTMLSpanElement>(null);
 
@@ -72,6 +75,8 @@ export default function AnimatedNumber({
           return;
         }
 
+        const scrollerEl = document.querySelector(".terminal-scrollbar") || window;
+
         // Animate rolling up from bottom to top
         gsap.fromTo(
           wheel,
@@ -79,15 +84,23 @@ export default function AnimatedNumber({
           {
             yPercent: finalYPercent,
             duration: duration + idx * 0.06,
-            delay: delay + idx * 0.03,
+            delay: scrollTrigger ? idx * 0.04 : delay + idx * 0.03,
             ease: "power2.out",
+            scrollTrigger: scrollTrigger
+              ? {
+                  trigger: containerRef.current,
+                  scroller: scrollerEl,
+                  start: "top 90%",
+                  toggleActions: "play none none none",
+                }
+              : undefined,
           }
         );
       });
     },
     {
       scope: containerRef,
-      dependencies: [value, duration, delay, formattedStr],
+      dependencies: [value, duration, delay, formattedStr, scrollTrigger],
       revertOnUpdate: true,
     }
   );

@@ -671,7 +671,7 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
     }, [backdrop, backdropRef, enableLiquidEffect, solid]);
 
     const effectOn = enableLiquidEffect && !solid;
-    const blur = effectOn && !textured ? limit(frost, 0, 1) * 14 : 0;
+    const blur = effectOn && !textured ? limit(frost, 0, 2) * 20 : 0;
     const material = `rgba(${tintRgba(tint, limit(tintOpacity, 0, 1)).join(",")})`;
     return (
       <div

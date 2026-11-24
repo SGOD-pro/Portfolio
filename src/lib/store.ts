@@ -56,19 +56,22 @@ const store = createStore<GitHubState>({
   fetchProfile: async () => {
     const current = store.getState();
 
-    // Hydrate immediately from localStorage if memory is empty
-    if (!current.profile) {
-      const cached = getLocalCache<GitHubProfile>("profile:SGOD-pro");
-      if (cached) {
-        store.setState({ profile: cached, profileLoading: false });
-      } else {
-        store.setState({ profileLoading: true });
-      }
+    // 1. Return immediately if profile is already in memory
+    if (current.profile) {
+      return;
+    }
+
+    // 2. Return immediately if valid in local cache
+    const cached = getLocalCache<GitHubProfile>("profile:SGOD-pro");
+    if (cached) {
+      store.setState({ profile: cached, profileLoading: false });
+      return;
     }
 
     // Deduplicate in-flight network requests
     if (profilePromise) return profilePromise;
 
+    store.setState({ profileLoading: true });
     profilePromise = (async () => {
       try {
         const res = await fetch("/api/github/profile");
@@ -94,19 +97,22 @@ const store = createStore<GitHubState>({
   fetchProjects: async () => {
     const current = store.getState();
 
-    // Hydrate immediately from localStorage if memory is empty
-    if (!current.projectsData || current.projectsData.projects.length === 0) {
-      const cached = getLocalCache<ProjectListResult>("projects:SGOD-pro");
-      if (cached && cached.projects && cached.projects.length > 0) {
-        store.setState({ projectsData: cached, projectsLoading: false });
-      } else {
-        store.setState({ projectsLoading: true });
-      }
+    // 1. Return immediately if projects are already in memory
+    if (current.projectsData && current.projectsData.projects.length > 0) {
+      return;
+    }
+
+    // 2. Return immediately if valid in local cache
+    const cached = getLocalCache<ProjectListResult>("projects:SGOD-pro");
+    if (cached && cached.projects && cached.projects.length > 0) {
+      store.setState({ projectsData: cached, projectsLoading: false });
+      return;
     }
 
     // Deduplicate in-flight network requests
     if (projectsPromise) return projectsPromise;
 
+    store.setState({ projectsLoading: true });
     projectsPromise = (async () => {
       try {
         const res = await fetch("/api/github/projects");
@@ -132,19 +138,22 @@ const store = createStore<GitHubState>({
   fetchActivity: async () => {
     const current = store.getState();
 
-    // Hydrate immediately from localStorage if memory is empty
-    if (current.activity.length === 0) {
-      const cached = getLocalCache<GitHubActivityItem[]>("activity:SGOD-pro");
-      if (cached && cached.length > 0) {
-        store.setState({ activity: cached, activityLoading: false });
-      } else {
-        store.setState({ activityLoading: true });
-      }
+    // 1. Return immediately if activity is already in memory
+    if (current.activity && current.activity.length > 0) {
+      return;
+    }
+
+    // 2. Return immediately if valid in local cache
+    const cached = getLocalCache<GitHubActivityItem[]>("activity:SGOD-pro");
+    if (cached && cached.length > 0) {
+      store.setState({ activity: cached, activityLoading: false });
+      return;
     }
 
     // Deduplicate in-flight network requests
     if (activityPromise) return activityPromise;
 
+    store.setState({ activityLoading: true });
     activityPromise = (async () => {
       try {
         const res = await fetch("/api/github/activity");

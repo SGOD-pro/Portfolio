@@ -336,8 +336,8 @@ function DefaultSidebar() {
 
       <div role="separator" aria-orientation="horizontal" className="my-2 border-b border-border w-full shrink-0" />
 
-      {/* GitHub Profile Picture & Stats */}
-      <div className="flex items-center gap-3.5 py-2.5 px-1 shrink-0">
+      {/* GitHub Profile Picture & Stats - Prominent Avatar with details below */}
+      <div className="flex flex-col items-center text-center gap-2.5 py-3 px-1 shrink-0">
         <a
           href="https://github.com/SGOD-pro"
           target="_blank"
@@ -345,39 +345,37 @@ function DefaultSidebar() {
           className="relative group/avatar focus-visible:outline-2 focus-visible:outline-focus rounded-full transition-transform hover:scale-105 shrink-0"
           title="View SGOD-pro on GitHub"
         >
-          <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-full p-0.5 border border-border bg-surface-secondary/40 group-hover/avatar:border-command transition-all duration-300 shadow-[0_0_18px_rgba(156,175,136,0.25)]">
+          <div className="relative w-24 h-24 sm:w-26 sm:h-26 rounded-full p-1 border-2 border-border/70 bg-surface-secondary/40 group-hover/avatar:border-command transition-all duration-300 shadow-[0_0_24px_rgba(156,175,136,0.3)]">
             <Image
               unoptimized
-              src="https://github.com/SGOD-pro.png?size=200"
+              src="https://github.com/SGOD-pro.png?size=300"
               alt="Souvik Karmakar"
-              width={72}
-              height={72}
+              width={104}
+              height={104}
               className="w-full h-full rounded-full object-cover"
               priority
             />
           </div>
           <span
-            className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-success border-2 border-background shadow-[0_0_8px_rgba(102,170,140,0.6)]"
+            className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-success border-2 border-background shadow-[0_0_10px_rgba(102,170,140,0.8)]"
             title="Active"
           />
         </a>
 
-        {/* Stats beside profile picture */}
-        <div className="flex flex-col min-w-0 font-mono">
-          <div className="flex items-center gap-1.5 truncate">
-            <span
-              suppressHydrationWarning
-              className="text-xs sm:text-[13px] font-semibold text-foreground truncate"
-            >
-              {displayName}
-            </span>
-          </div>
-          <span className="text-[10px] text-muted -mt-0.5 mb-1.5 block">
+        {/* Details below profile picture */}
+        <div className="flex flex-col items-center font-mono">
+          <span
+            suppressHydrationWarning
+            className="text-sm sm:text-base font-bold text-foreground tracking-tight"
+          >
+            {displayName}
+          </span>
+          <span className="text-[11px] text-muted -mt-0.5 mb-1.5">
             @SGOD-pro
           </span>
 
           {/* Contributions + Followers + Following */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px]">
             <span className="inline-flex items-center gap-1" title="Contributions in the last year">
               <strong className="text-command font-bold" suppressHydrationWarning>
                 <AnimatedNumber value={profile?.totalContributions || 761} />

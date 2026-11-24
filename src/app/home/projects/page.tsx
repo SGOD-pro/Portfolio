@@ -38,6 +38,7 @@ function ProjectReaderView({
     ? selectedRepo.fullName.split("/")[0]
     : undefined;
 
+  const [prevCacheKey, setPrevCacheKey] = useState(cacheKey);
   const [docData, setDocData] = useState<DocResponse | null>(() => {
     return getLocalCache<DocResponse>(cacheKey);
   });
@@ -48,13 +49,17 @@ function ProjectReaderView({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  if (prevCacheKey !== cacheKey) {
+    setPrevCacheKey(cacheKey);
+    const cached = getLocalCache<DocResponse>(cacheKey);
+    setDocData(cached);
+    setLoading(!cached);
+    setErrorStatus(null);
+    setErrorMessage(null);
+  }
+
   useEffect(() => {
     let active = true;
-
-    if (!docData) {
-      setLoading(true);
-      setErrorStatus(null);
-    }
 
     const ownerParam = repoOwner ? `&owner=${encodeURIComponent(repoOwner)}` : "";
     fetch(`/api/github/repo/${encodeURIComponent(project)}/doc?path=${encodeURIComponent(docPath)}${ownerParam}`)
@@ -86,7 +91,7 @@ function ProjectReaderView({
     return () => {
       active = false;
     };
-  }, [project, docPath, repoOwner, retryCount, cacheKey, docData]);
+  }, [project, docPath, repoOwner, retryCount, cacheKey]);
 
   return (
     <div className="flex flex-col grow">
@@ -166,19 +171,19 @@ function ProjectReaderView({
       {/* Reader Document Area */}
       <div className="mt-3 flex-1">
         {loading && (
-          <div className="space-y-4 p-5 rounded-xl border border-border bg-surface/30 animate-pulse">
+          <div className="space-y-4 p-5 rounded-xl border border-border bg-surface/30">
             {/* Title Skeleton */}
             <div className="flex items-center gap-2 pb-2 border-b border-border/50">
               <div className="h-2 w-2 rounded-full bg-command/50" />
-              <div className="h-5 w-56 bg-surface-secondary rounded" />
-              <div className="ml-auto h-3 w-20 bg-surface-secondary/50 rounded" />
+              <div className="h-5 w-56 bg-surface-secondary rounded skeleton-shimmer" />
+              <div className="ml-auto h-3 w-20 bg-surface-secondary/50 rounded skeleton-shimmer" />
             </div>
 
             {/* Paragraph lines Skeleton */}
             <div className="space-y-2 mt-3">
-              <div className="h-3.5 w-full bg-surface-secondary/60 rounded" />
-              <div className="h-3.5 w-11/12 bg-surface-secondary/50 rounded" />
-              <div className="h-3.5 w-4/5 bg-surface-secondary/40 rounded" />
+              <div className="h-3.5 w-full bg-surface-secondary/60 rounded skeleton-shimmer" />
+              <div className="h-3.5 w-11/12 bg-surface-secondary/50 rounded skeleton-shimmer" />
+              <div className="h-3.5 w-4/5 bg-surface-secondary/40 rounded skeleton-shimmer" />
             </div>
 
             {/* Code Block Skeleton */}
@@ -225,7 +230,12 @@ function ProjectReaderView({
               </TransitionLink>
               <button
                 type="button"
-                onClick={() => setRetryCount((c) => c + 1)}
+                onClick={() => {
+                  setLoading(true);
+                  setErrorStatus(null);
+                  setErrorMessage(null);
+                  setRetryCount((c) => c + 1);
+                }}
                 className="rounded border border-border bg-surface-secondary/40 px-3 py-1.5 text-xs text-muted hover:text-foreground transition cursor-pointer"
               >
                 Retry
@@ -252,7 +262,12 @@ function ProjectReaderView({
             <div className="mt-4 flex gap-3">
               <button
                 type="button"
-                onClick={() => setRetryCount((c) => c + 1)}
+                onClick={() => {
+                  setLoading(true);
+                  setErrorStatus(null);
+                  setErrorMessage(null);
+                  setRetryCount((c) => c + 1);
+                }}
                 className="rounded border border-danger/50 px-3 py-1 text-danger hover:bg-danger/20 transition cursor-pointer"
               >
                 Retry Request
@@ -347,15 +362,15 @@ function ProjectListView({
       </header>
 
       {loading && (
-        <div className="grid gap-4 lg:grid-cols-2 animate-pulse">
+        <div className="grid gap-4 lg:grid-cols-2">
           {[1, 2, 3, 4].map((n) => (
             <div
               key={n}
               className="h-44 rounded-xl border border-border bg-surface/40 p-5 flex flex-col justify-between"
             >
-              <div className="h-5 w-40 bg-surface-secondary rounded" />
-              <div className="h-12 w-full bg-surface-secondary/60 rounded" />
-              <div className="h-4 w-32 bg-surface-secondary rounded" />
+              <div className="h-5 w-40 bg-surface-secondary rounded skeleton-shimmer" />
+              <div className="h-12 w-full bg-surface-secondary/60 rounded skeleton-shimmer" />
+              <div className="h-4 w-32 bg-surface-secondary rounded skeleton-shimmer" />
             </div>
           ))}
         </div>

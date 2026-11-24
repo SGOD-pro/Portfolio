@@ -13,9 +13,9 @@ export default function SkillsLoading() {
         </div>
       </div>
 
-      <header className="mt-2 mb-6 animate-pulse">
-        <div className="h-8 w-56 bg-surface-secondary/80 rounded" />
-        <div className="mt-2 h-4 w-96 max-w-[65ch] bg-surface-secondary/50 rounded" />
+      <header className="mt-2 mb-6">
+        <div className="h-8 w-56 bg-surface-secondary/80 rounded skeleton-shimmer" />
+        <div className="mt-2 h-4 w-96 max-w-[65ch] bg-surface-secondary/50 rounded skeleton-shimmer" />
       </header>
 
       {/* Skills Category Grid Skeleton */}
@@ -23,23 +23,23 @@ export default function SkillsLoading() {
         {[1, 2, 3, 4].map((cat) => (
           <div
             key={cat}
-            className="rounded-xl border border-border bg-surface/80 p-5 sm:p-6 space-y-4 animate-pulse"
+            className="rounded-xl border border-border bg-surface/80 p-5 sm:p-6 space-y-4"
           >
             <div>
-              <div className="h-4 w-40 bg-surface-secondary/80 rounded" />
-              <div className="h-3 w-5/6 bg-surface-secondary/50 rounded mt-2" />
+              <div className="h-4 w-40 bg-surface-secondary/80 rounded skeleton-shimmer" />
+              <div className="h-3 w-5/6 bg-surface-secondary/50 rounded mt-2 skeleton-shimmer" />
             </div>
 
             <div className="space-y-3 pt-2">
               {[1, 2, 3, 4, 5, 6].map((sk) => (
                 <div key={sk} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <div className="h-3 w-20 bg-surface-secondary/60 rounded" />
-                    <div className="h-3 w-8 bg-surface-secondary/40 rounded" />
+                    <div className="h-3 w-20 bg-surface-secondary/60 rounded skeleton-shimmer" />
+                    <div className="h-3 w-8 bg-surface-secondary/40 rounded skeleton-shimmer" />
                   </div>
                   <div className="h-1.5 w-full bg-surface-secondary/30 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-surface-secondary/60 rounded-full"
+                      className="h-full bg-surface-secondary/60 rounded-full skeleton-shimmer"
                       style={{ width: `${60 + (sk * 7) % 35}%` }}
                     />
                   </div>

@@ -2,6 +2,7 @@
 
 import TransitionLink from "@/components/TransitionLink";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useGitHubStore } from "@/lib/store";
 import TextReveal from "@/components/TextReveal";
 import AnimatedNumber from "@/components/AnimatedNumber";
@@ -105,9 +106,14 @@ const CERTIFICATES: Certificate[] = [
 ];
 
 export default function AchievementsPage() {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<"all" | "hackathons" | "courses">("all");
   const profile = useGitHubStore((s) => s.profile);
   const fetchProfile = useGitHubStore((s) => s.fetchProfile);
+
+  useEffect(() => {
+    router.replace("/home/skills");
+  }, [router]);
 
   useEffect(() => {
     fetchProfile();
@@ -231,7 +237,6 @@ export default function AchievementsPage() {
       {/* Verified Hackathon & Course Certificates Grid */}
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border font-mono text-xs">
-          <span className="h-2 w-2 rounded-full bg-command" />
           <h2 className="text-xs uppercase tracking-wider font-semibold text-foreground">
             Verified Hackathons &amp; Course Completion Credentials
           </h2>
@@ -289,7 +294,6 @@ export default function AchievementsPage() {
 
               <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted/80">
-                  <span className="text-success">●</span>
                   <span className="truncate max-w-[180px] sm:max-w-[220px]" title={cert.fileName}>
                     {cert.fileName}
                   </span>

@@ -79,13 +79,13 @@ function Home() {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface-secondary/20 p-2.5 animate-pulse"
+                    className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface-secondary/20 p-2.5"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="h-3 w-32 bg-surface-secondary/80 rounded" />
-                      <div className="h-2.5 w-16 bg-surface-secondary/60 rounded" />
+                      <div className="h-3 w-32 bg-surface-secondary/80 rounded skeleton-shimmer" />
+                      <div className="h-2.5 w-16 bg-surface-secondary/60 rounded skeleton-shimmer" />
                     </div>
-                    <div className="h-2.5 w-24 bg-surface-secondary/40 rounded" />
+                    <div className="h-2.5 w-24 bg-surface-secondary/40 rounded skeleton-shimmer" />
                   </div>
                 ))}
               </div>

@@ -14,22 +14,22 @@ export default function HomeLoading() {
 
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-12 grow items-start mt-2">
         {/* Left Column: Hero & Narrative Skeleton */}
-        <section className="lg:col-span-7 flex flex-col animate-pulse">
-          <div className="h-9 sm:h-11 lg:h-12 w-64 sm:w-72 bg-surface-secondary/80 rounded" />
-          <div className="mt-2 h-4 w-72 sm:w-80 bg-surface-secondary/50 rounded" />
+        <section className="lg:col-span-7 flex flex-col">
+          <div className="h-9 sm:h-11 lg:h-12 w-64 sm:w-72 bg-surface-secondary/80 rounded skeleton-shimmer" />
+          <div className="mt-2 h-4 w-72 sm:w-80 bg-surface-secondary/50 rounded skeleton-shimmer" />
 
           <div className="mt-4 space-y-2.5 max-w-[62ch]">
-            <div className="h-3.5 w-full bg-surface-secondary/50 rounded" />
-            <div className="h-3.5 w-11/12 bg-surface-secondary/40 rounded" />
-            <div className="h-3.5 w-4/5 bg-surface-secondary/40 rounded" />
-            <div className="h-3.5 w-full bg-surface-secondary/40 rounded mt-3" />
-            <div className="h-3.5 w-3/4 bg-surface-secondary/30 rounded" />
+            <div className="h-3.5 w-full bg-surface-secondary/50 rounded skeleton-shimmer" />
+            <div className="h-3.5 w-11/12 bg-surface-secondary/40 rounded skeleton-shimmer" />
+            <div className="h-3.5 w-4/5 bg-surface-secondary/40 rounded skeleton-shimmer" />
+            <div className="h-3.5 w-full bg-surface-secondary/40 rounded mt-3 skeleton-shimmer" />
+            <div className="h-3.5 w-3/4 bg-surface-secondary/30 rounded skeleton-shimmer" />
           </div>
 
           {/* Action Buttons Skeleton */}
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <div className="h-9 w-36 rounded-lg bg-accent/40" />
-            <div className="h-9 w-28 rounded-lg border border-border bg-surface-secondary/40" />
+            <div className="h-9 w-36 rounded-lg bg-accent/40 skeleton-shimmer" />
+            <div className="h-9 w-28 rounded-lg border border-border bg-surface-secondary/40 skeleton-shimmer" />
           </div>
         </section>
 
@@ -49,13 +49,13 @@ export default function HomeLoading() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface-secondary/20 p-2.5 animate-pulse"
+                  className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface-secondary/20 p-2.5"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="h-3 w-32 bg-surface-secondary/80 rounded" />
-                    <div className="h-2.5 w-16 bg-surface-secondary/60 rounded" />
+                    <div className="h-3 w-32 bg-surface-secondary/80 rounded skeleton-shimmer" />
+                    <div className="h-2.5 w-16 bg-surface-secondary/60 rounded skeleton-shimmer" />
                   </div>
-                  <div className="h-2.5 w-24 bg-surface-secondary/40 rounded" />
+                  <div className="h-2.5 w-24 bg-surface-secondary/40 rounded skeleton-shimmer" />
                 </div>
               ))}
             </div>

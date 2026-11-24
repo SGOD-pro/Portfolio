@@ -24,6 +24,10 @@ export function useViewTransition() {
     if (pageEl) {
       pageEl.classList.remove("slide-page-exit");
     }
+    const scroller = document.querySelector<HTMLElement>(".terminal-scrollbar");
+    if (scroller) {
+      scroller.scrollTop = 0;
+    }
   }, [pathname]);
 
   const prefetch = useCallback(
@@ -58,6 +62,8 @@ export function useViewTransition() {
             ? window.location.pathname + window.location.search
             : pathname;
         if (href === currentFull) {
+          const scroller = document.querySelector<HTMLElement>(".terminal-scrollbar");
+          if (scroller) scroller.scrollTop = 0;
           return;
         }
 
@@ -69,6 +75,8 @@ export function useViewTransition() {
 
         startReactTransition(() => {
           router.push(href);
+          const scroller = document.querySelector<HTMLElement>(".terminal-scrollbar");
+          if (scroller) scroller.scrollTop = 0;
         });
         return;
       }

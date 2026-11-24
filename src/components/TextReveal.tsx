@@ -3,9 +3,10 @@
 import React, { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(useGSAP);
+  gsap.registerPlugin(useGSAP, ScrollTrigger);
 }
 
 interface TextRevealProps {
@@ -15,6 +16,7 @@ interface TextRevealProps {
   delay?: number;
   duration?: number;
   stagger?: number;
+  scrollTrigger?: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ interface TextRevealProps {
  * - Fast, non-blocking duration (0.28s) with crisp stagger (0.015s).
  * - Full screen-reader accessibility: text preserved via aria-label.
  * - Respects prefers-reduced-motion: settles immediately.
+ * - Supports scrollTrigger to animate only when scrolled into view.
  */
 export default function TextReveal({
   text,
@@ -32,6 +35,7 @@ export default function TextReveal({
   delay = 0.06,
   duration = 0.38,
   stagger = 0.025,
+  scrollTrigger = false,
 }: TextRevealProps) {
   const containerRef = useRef<HTMLElement>(null);
 
@@ -59,6 +63,8 @@ export default function TextReveal({
         Math.min(stagger, 0.32 / Math.max(1, letters.length)),
       );
 
+      const scrollerEl = document.querySelector(".terminal-scrollbar") || window;
+
       gsap.fromTo(
         letters,
         {
@@ -70,15 +76,23 @@ export default function TextReveal({
           y: 0,
           duration,
           stagger: effectiveStagger,
-          delay,
+          delay: scrollTrigger ? 0.04 : delay,
           ease: "power2.out",
           clearProps: "transform,will-change",
+          scrollTrigger: scrollTrigger
+            ? {
+                trigger: containerRef.current,
+                scroller: scrollerEl,
+                start: "top 88%",
+                toggleActions: "play none none none",
+              }
+            : undefined,
         },
       );
     },
     {
       scope: containerRef,
-      dependencies: [text, delay, duration, stagger],
+      dependencies: [text, delay, duration, stagger, scrollTrigger],
       revertOnUpdate: true,
     },
   );
