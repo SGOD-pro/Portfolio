@@ -4,27 +4,40 @@ import Link from "next/link";
 import TextReveal from "@/components/TextReveal";
 import TerminalPrompt from "@/components/TerminalPrompt";
 
-const focusAreas = [
+const experienceTimeline = [
   {
-    title: "Fullstack Web Engineering",
-    period: "2023 – Present",
+    title: "AI Agent Systems, System Design & Fullstack Web Engineering",
+    period: "2026",
     description:
-      "Developing end-to-end applications with Next.js, React, and TypeScript. Designing modular component systems, server actions, and responsive interfaces optimized for performance.",
-    highlights: ["Next.js App Router & Server Components", "Design system implementation with Tailwind", "State management & accessible form design"],
+      "Designing and building AI agent systems and agentic workflows alongside end-to-end fullstack web engineering, scalable system design, and automated CI/CD pipelines.",
+    highlights: [
+      "AI Agent Systems",
+      "Agentic Workflows",
+      "Fullstack Web Engineering",
+      "System Design",
+      "CI/CD",
+    ],
   },
   {
-    title: "Applied AI & Retrieval Systems",
-    period: "2023 – Present",
+    title: "AI & Machine Learning",
+    period: "2025",
     description:
-      "Building practical developer tools and retrieval-augmented generation (RAG) pipelines using vector embeddings, OpenAI APIs, and custom parsing workflows.",
-    highlights: ["Semantic document indexing & retrieval", "Streaming LLM responses in real-time interfaces", "Prompt engineering & evaluation workflows"],
+      "Learned core artificial intelligence and machine learning concepts, model integration, and applied intelligent workflows.",
+    highlights: ["Artificial Intelligence", "Machine Learning", "Applied AI Integration"],
   },
   {
-    title: "Backend Services & API Design",
-    period: "2022 – Present",
+    title: "Backend Integration, Docker & Fullstack Development",
+    period: "2024",
     description:
-      "Designing clean REST and GraphQL endpoints, data models with PostgreSQL and MongoDB, and containerized microservices with Docker.",
-    highlights: ["Database schema design & migrations", "Authentication & secure route protection", "Performance profiling and caching strategies"],
+      "Integrated backend APIs and services into web applications, learned Docker containerization, and transitioned into fullstack development.",
+    highlights: ["Backend Integration", "Docker", "Fullstack Development"],
+  },
+  {
+    title: "Web Development Foundations",
+    period: "2023",
+    description:
+      "Started web development by building responsive interfaces, layouts, and interactive client-side behavior using HTML, CSS, and JavaScript.",
+    highlights: ["HTML", "CSS", "JavaScript"],
   },
 ];
 
@@ -42,7 +55,7 @@ function Experience() {
               className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-foreground"
             />
             <p className="mt-1 text-sm sm:text-base font-sans text-muted leading-relaxed max-w-[65ch]">
-              Technical background, engineering project focus, and core developer practices.
+              Progression from web fundamentals in 2023 to fullstack systems, AI/ML, and agentic engineering.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-mono">
@@ -52,9 +65,9 @@ function Experience() {
         </div>
       </header>
 
-      {/* Experience / Focus Cards */}
+      {/* Experience Timeline Cards */}
       <div className="space-y-4">
-        {focusAreas.map((area) => (
+        {experienceTimeline.map((area) => (
           <section
             key={area.title}
             className="rounded-xl border border-border bg-surface/80 p-5 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0"

@@ -58,10 +58,10 @@ function HomeLayout({
       return;
     }
 
-    // Throttle WebGL backdrop snapshot to at most once every 32ms (~30fps)
-    // This saves ~60% GPU/CPU texture upload overhead on low-end devices while keeping refraction fluid
+    // Throttle WebGL backdrop snapshot to save mobile GPU bandwidth for smooth dock & scroll animations
+    const throttleMs = window.innerWidth < 1024 ? 48 : 30;
     const now = performance.now();
-    if (now - lastRefreshTimeRef.current < 30) {
+    if (now - lastRefreshTimeRef.current < throttleMs) {
       return;
     }
     lastRefreshTimeRef.current = now;
@@ -185,7 +185,7 @@ function HomeLayout({
             {/* 2. Scrollable Page Content Area */}
             <div
               ref={contentScrollRef}
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-2.5 lg:py-3.5 pr-0 lg:pr-2 pb-20 lg:pb-2 focus:outline-none terminal-scrollbar"
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-2.5 lg:py-3.5 pr-0 lg:pr-2 pb-8 lg:pb-2 focus:outline-none terminal-scrollbar"
             >
               <div
                 key={pathname}

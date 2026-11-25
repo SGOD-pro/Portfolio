@@ -652,6 +652,9 @@ const DotGrid = ({
 
     const onDown = (event: PointerEvent) => {
       if (!settingsRef.current.clickShock || reduced) return;
+      // Avoid triggering full-screen background shockwave & glass texture re-uploads
+      // while interacting with the mobile bottom dock so pill animations stay 120fps.
+      if ((event.target as Element | null)?.closest?.(".mln-root")) return;
       const [x, y] = locate(event);
       if (x < 0 || y < 0 || x > view.width || y > view.height) return;
       shocks.push({ x, y, start: performance.now() });

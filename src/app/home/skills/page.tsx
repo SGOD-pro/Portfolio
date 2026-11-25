@@ -8,6 +8,7 @@ import TextReveal from "@/components/TextReveal";
 import TerminalPrompt from "@/components/TerminalPrompt";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import { useGitHubStore } from "@/lib/store";
+import { getActiveScroller } from "@/utils/scrollContainer";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -208,125 +209,134 @@ export default function SkillsPage() {
       const isReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (isReduced) return;
 
-      const scrollerEl = document.querySelector(".terminal-scrollbar") || window;
+      const mm = gsap.matchMedia();
+      mm.add(
+        {
+          isDesktop: "(min-width: 1024px)",
+          isMobile: "(max-width: 1023px)",
+        },
+        () => {
+          const scrollerEl = getActiveScroller();
 
-      // 1. Achievements Header Elements Fade-In with ScrollTrigger
-      if (achievementsHeaderRef.current) {
-        const kicker = achievementsHeaderRef.current.querySelector(".achievements-kicker");
-        const desc = achievementsHeaderRef.current.querySelector(".achievements-desc");
+          // 1. Achievements Header Elements Fade-In with ScrollTrigger
+          if (achievementsHeaderRef.current) {
+            const kicker = achievementsHeaderRef.current.querySelector(".achievements-kicker");
+            const desc = achievementsHeaderRef.current.querySelector(".achievements-desc");
 
-        if (kicker) {
-          gsap.fromTo(
-            kicker,
-            { opacity: 0, y: 8 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.35,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: achievementsHeaderRef.current,
-                scroller: scrollerEl,
-                start: "top 88%",
-                toggleActions: "play none none none",
-              },
+            if (kicker) {
+              gsap.fromTo(
+                kicker,
+                { opacity: 0, y: 8 },
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.35,
+                  ease: "power2.out",
+                  scrollTrigger: {
+                    trigger: achievementsHeaderRef.current,
+                    scroller: scrollerEl,
+                    start: "top 92%",
+                    toggleActions: "play none none none",
+                  },
+                }
+              );
             }
-          );
-        }
 
-        if (desc) {
-          gsap.fromTo(
-            desc,
-            { opacity: 0, y: 10 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.45,
-              delay: 0.12,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: achievementsHeaderRef.current,
-                scroller: scrollerEl,
-                start: "top 88%",
-                toggleActions: "play none none none",
-              },
+            if (desc) {
+              gsap.fromTo(
+                desc,
+                { opacity: 0, y: 10 },
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.45,
+                  delay: 0.12,
+                  ease: "power2.out",
+                  scrollTrigger: {
+                    trigger: achievementsHeaderRef.current,
+                    scroller: scrollerEl,
+                    start: "top 92%",
+                    toggleActions: "play none none none",
+                  },
+                }
+              );
             }
-          );
-        }
-      }
-
-      // 2. Achievements Subtitle and Action Controls Fade-In with ScrollTrigger
-      if (achievementsSubRef.current) {
-        gsap.fromTo(
-          achievementsSubRef.current,
-          { opacity: 0, y: 14 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.45,
-            delay: 0.14,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: achievementsSubRef.current,
-              scroller: scrollerEl,
-              start: "top 88%",
-              toggleActions: "play none none none",
-            },
           }
-        );
-      }
 
-      // 3. Top Overview Stat Badges (Image 3) - Revels fade in ONE BY ONE
-      if (topCardsContainerRef.current) {
-        const statCards = topCardsContainerRef.current.querySelectorAll(".stat-card");
-        if (statCards && statCards.length > 0) {
-          gsap.fromTo(
-            statCards,
-            { opacity: 0, y: 22 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.45,
-              stagger: 0.1,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: topCardsContainerRef.current,
-                scroller: scrollerEl,
-                start: "top 88%",
-                toggleActions: "play none none none",
-              },
-            }
-          );
-        }
-      }
-
-      // 4. Certificate & Credential Cards (Image 4) - Individual revealing animation for each card when in view
-      if (cardsContainerRef.current) {
-        const cards = cardsContainerRef.current.querySelectorAll(".achievement-card");
-        if (cards && cards.length > 0) {
-          cards.forEach((card) => {
+          // 2. Achievements Subtitle and Action Controls Fade-In with ScrollTrigger
+          if (achievementsSubRef.current) {
             gsap.fromTo(
-              card,
-              { opacity: 0, y: 26 },
+              achievementsSubRef.current,
+              { opacity: 0, y: 14 },
               {
                 opacity: 1,
                 y: 0,
-                duration: 0.5,
+                duration: 0.45,
+                delay: 0.14,
                 ease: "power2.out",
                 scrollTrigger: {
-                  trigger: card,
+                  trigger: achievementsSubRef.current,
                   scroller: scrollerEl,
-                  start: "top 90%",
+                  start: "top 92%",
                   toggleActions: "play none none none",
                 },
               }
             );
-          });
-        }
-      }
+          }
 
-      // Refresh ScrollTrigger after DOM setup
-      ScrollTrigger.refresh();
+          // 3. Top Overview Stat Badges - Fade in one by one
+          if (topCardsContainerRef.current) {
+            const statCards = topCardsContainerRef.current.querySelectorAll(".stat-card");
+            if (statCards && statCards.length > 0) {
+              gsap.fromTo(
+                statCards,
+                { opacity: 0, y: 22 },
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.45,
+                  stagger: 0.1,
+                  ease: "power2.out",
+                  scrollTrigger: {
+                    trigger: topCardsContainerRef.current,
+                    scroller: scrollerEl,
+                    start: "top 92%",
+                    toggleActions: "play none none none",
+                  },
+                }
+              );
+            }
+          }
+
+          // 4. Certificate & Credential Cards - Individual reveal animation when in view
+          if (cardsContainerRef.current) {
+            const cards = cardsContainerRef.current.querySelectorAll(".achievement-card");
+            if (cards && cards.length > 0) {
+              cards.forEach((card) => {
+                gsap.fromTo(
+                  card,
+                  { opacity: 0, y: 26 },
+                  {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.5,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                      trigger: card,
+                      scroller: scrollerEl,
+                      start: "top 94%",
+                      toggleActions: "play none none none",
+                    },
+                  }
+                );
+              });
+            }
+          }
+        }
+      );
+
+      const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
+      return () => cancelAnimationFrame(raf);
     },
     { scope: containerRef, dependencies: [filteredCerts] }
   );

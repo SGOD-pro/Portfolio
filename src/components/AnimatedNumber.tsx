@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { getActiveScroller } from "@/utils/scrollContainer";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -60,43 +61,58 @@ export default function AnimatedNumber({
       const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const wheels = containerRef.current.querySelectorAll<HTMLSpanElement>(".digit-wheel");
 
-      wheels.forEach((wheel, idx) => {
-        const targetStr = wheel.getAttribute("data-target");
-        if (targetStr === null) return;
-        const target = parseInt(targetStr, 10);
-        if (isNaN(target)) return;
+      const animateWheels = (scrollerEl?: Element | Window) => {
+        wheels.forEach((wheel, idx) => {
+          const targetStr = wheel.getAttribute("data-target");
+          if (targetStr === null) return;
+          const target = parseInt(targetStr, 10);
+          if (isNaN(target)) return;
 
-        // Target index in DOUBLE_DIGITS is 10 + target
-        // Total items = 20, so each digit step is 5% (1/20)
-        const finalYPercent = -(10 + target) * 5;
+          // Target index in DOUBLE_DIGITS is 10 + target
+          // Total items = 20, so each digit step is 5% (1/20)
+          const finalYPercent = -(10 + target) * 5;
 
-        if (isReducedMotion) {
-          gsap.set(wheel, { yPercent: finalYPercent });
-          return;
-        }
-
-        const scrollerEl = document.querySelector(".terminal-scrollbar") || window;
-
-        // Animate rolling up from bottom to top
-        gsap.fromTo(
-          wheel,
-          { yPercent: 0 },
-          {
-            yPercent: finalYPercent,
-            duration: duration + idx * 0.06,
-            delay: scrollTrigger ? idx * 0.04 : delay + idx * 0.03,
-            ease: "power2.out",
-            scrollTrigger: scrollTrigger
-              ? {
-                  trigger: containerRef.current,
-                  scroller: scrollerEl,
-                  start: "top 90%",
-                  toggleActions: "play none none none",
-                }
-              : undefined,
+          if (isReducedMotion) {
+            gsap.set(wheel, { yPercent: finalYPercent });
+            return;
           }
-        );
-      });
+
+          gsap.fromTo(
+            wheel,
+            { yPercent: 0 },
+            {
+              yPercent: finalYPercent,
+              duration: duration + idx * 0.06,
+              delay: scrollTrigger ? idx * 0.04 : delay + idx * 0.03,
+              ease: "power2.out",
+              scrollTrigger: scrollTrigger
+                ? {
+                    trigger: containerRef.current,
+                    scroller: scrollerEl,
+                    start: "top 92%",
+                    toggleActions: "play none none none",
+                  }
+                : undefined,
+            }
+          );
+        });
+      };
+
+      if (!scrollTrigger) {
+        animateWheels();
+        return;
+      }
+
+      const mm = gsap.matchMedia();
+      mm.add(
+        {
+          isDesktop: "(min-width: 1024px)",
+          isMobile: "(max-width: 1023px)",
+        },
+        () => {
+          animateWheels(getActiveScroller());
+        }
+      );
     },
     {
       scope: containerRef,

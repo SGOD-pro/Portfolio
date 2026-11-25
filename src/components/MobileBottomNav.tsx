@@ -81,7 +81,7 @@ export const DOCK_CONFIG = {
 
   // --- Layout & Dimensions ---
   /** Dock height in pixels (increased for stealth mode) */
-  DOCK_HEIGHT: 66,
+  DOCK_HEIGHT: 64,
   /** Pill and tab item height in pixels (increased for stealth mode) */
   PILL_HEIGHT: 54,
   /** Pill width in pixels (0 = auto-fit to tab cell width; or set custom fixed px, e.g. 64) */
@@ -189,11 +189,22 @@ function MobileDock() {
   const dragStartRef = useRef({
     pointerId: -1,
     startX: 0,
+    dragOriginX: 0,
     pillStartX: 0,
     lastX: 0,
     lastTime: 0,
     smoothVx: 0,
+    scaleX: 1,
+    scaleY: 1,
   });
+
+  // Pre-warm all mobile route chunks shortly after mount so deployed tab switches never stall on network
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      NAV_ITEMS.forEach((item) => prefetch(item.href));
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [prefetch]);
 
   const slots = useCallback(() => {
     return visual.current ? (Array.from(visual.current.children) as HTMLElement[]) : [];
@@ -338,7 +349,7 @@ function MobileDock() {
         const label = cell.querySelector<HTMLElement>("[data-nav-label]")!;
         const ir = svg.getBoundingClientRect();
         const lr = label.getBoundingClientRect();
-        const color = getComputedStyle(cell).color;
+        const color = DOCK_CONFIG.ACTIVE_COLOR;
         const font = getComputedStyle(label);
         return {
           image: rasterIcon(svg, color),
@@ -365,14 +376,38 @@ function MobileDock() {
         if (canvas.height !== h) canvas.height = h;
 
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        ctx.fillStyle = "#091512";
+        // 1. Page background
+        ctx.fillStyle = pageColor && pageColor !== "rgba(0, 0, 0, 0)" ? pageColor : "#091512";
         ctx.fillRect(0, 0, width + PAD * 2, height + PAD * 2);
-        ctx.fillStyle = pageColor;
-        ctx.fillRect(0, 0, width + PAD * 2, height + PAD * 2);
+
+        // 2. Background dot grid so gliding across or past navbar edges refracts background dots cleanly
+        ctx.fillStyle = "rgba(42, 68, 56, 0.85)";
+        const dotGap = 18;
+        const dotR = 1.6;
+        for (let dy = dotGap / 2; dy < height + PAD * 2; dy += dotGap) {
+          for (let dx = dotGap / 2; dx < width + PAD * 2; dx += dotGap) {
+            ctx.beginPath();
+            ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // 3. Navbar capsule fill + crisp border & inner edge highlight so the navbar boundary refracts inside the glass
+        ctx.save();
         ctx.beginPath();
         ctx.roundRect(PAD, PAD, width, height, height / 2);
-        ctx.fillStyle = navColor;
+        ctx.fillStyle = navColor && navColor !== "rgba(0, 0, 0, 0)" ? navColor : "rgba(11, 22, 18, 0.94)";
         ctx.fill();
+        ctx.strokeStyle = "rgba(156, 175, 136, 0.42)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.roundRect(PAD + 1, PAD + 1, width - 2, height - 2, (height - 2) / 2);
+        ctx.strokeStyle = "rgba(240, 244, 241, 0.14)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
 
         entries.forEach((entry, i) => {
           ctx.drawImage(decoded[i], entry.ix, entry.iy, entry.iw, entry.ih);
@@ -467,14 +502,19 @@ function MobileDock() {
 
     const rawCurrentX = gsap.getProperty(pill, "x");
     const currentX = typeof rawCurrentX === "number" && !Number.isNaN(rawCurrentX) ? rawCurrentX : 0;
+    const rawScaleX = gsap.getProperty(pill, "scaleX");
+    const rawScaleY = gsap.getProperty(pill, "scaleY");
 
     dragStartRef.current = {
       pointerId: e.pointerId,
       startX: e.clientX,
+      dragOriginX: e.clientX,
       pillStartX: currentX,
       lastX: e.clientX,
       lastTime: Date.now(),
       smoothVx: 0,
+      scaleX: typeof rawScaleX === "number" && !Number.isNaN(rawScaleX) ? rawScaleX : 1,
+      scaleY: typeof rawScaleY === "number" && !Number.isNaN(rawScaleY) ? rawScaleY : 1,
     };
     hasDraggedRef.current = false;
     isDraggingRef.current = true;
@@ -485,12 +525,12 @@ function MobileDock() {
 
     gsap.killTweensOf(pill);
 
-    // Dynamic Lift on Touch: grow smoothly in both X and Y
+    // Smooth lift on pickup (power2.out avoids overshoot shaking when finger holds/moves)
     gsap.to(pill, {
       scaleX: DOCK_CONFIG.DRAG_SCALE_X,
       scaleY: DOCK_CONFIG.DRAG_SCALE_Y,
       duration: DOCK_CONFIG.DRAG_LIFT_DURATION,
-      ease: "back.out(1.8)",
+      ease: "power2.out",
       onUpdate: redraw,
     });
   };
@@ -501,10 +541,24 @@ function MobileDock() {
     const layer = visual.current;
     if (!layer) return;
 
-    const dx = e.clientX - dragStartRef.current.startX;
+    const initialDx = e.clientX - dragStartRef.current.startX;
     if (!hasDraggedRef.current) {
-      if (Math.abs(dx) <= DOCK_CONFIG.DRAG_THRESHOLD_PX) return;
+      if (Math.abs(initialDx) <= DOCK_CONFIG.DRAG_THRESHOLD_PX) return;
       hasDraggedRef.current = true;
+      // Anchor drag origin at the point drag begins so there is zero 5px jump,
+      // and capture current GSAP scale & stop the lift tween so nothing fights!
+      dragStartRef.current.dragOriginX = e.clientX;
+      dragStartRef.current.lastX = e.clientX;
+      dragStartRef.current.lastTime = Date.now();
+      dragStartRef.current.smoothVx = 0;
+
+      const curSX = gsap.getProperty(pill, "scaleX");
+      const curSY = gsap.getProperty(pill, "scaleY");
+      dragStartRef.current.scaleX = typeof curSX === "number" && !Number.isNaN(curSX) ? curSX : DOCK_CONFIG.DRAG_SCALE_X;
+      dragStartRef.current.scaleY = typeof curSY === "number" && !Number.isNaN(curSY) ? curSY : DOCK_CONFIG.DRAG_SCALE_Y;
+
+      gsap.killTweensOf(pill);
+
       try {
         e.currentTarget.setPointerCapture(dragStartRef.current.pointerId);
       } catch {
@@ -512,15 +566,17 @@ function MobileDock() {
       }
     }
 
+    const dx = e.clientX - dragStartRef.current.dragOriginX;
+
     // Filtered smooth velocity to drive organic jelly deformations with bounded dt
     const now = Date.now();
     const dt = Math.max(8, Math.min(64, now - dragStartRef.current.lastTime));
     const rawVx = (e.clientX - dragStartRef.current.lastX) / dt;
     dragStartRef.current.lastX = e.clientX;
     dragStartRef.current.lastTime = now;
-    dragStartRef.current.smoothVx += (rawVx - dragStartRef.current.smoothVx) * 0.35;
-    const instVx = Math.max(-12, Math.min(12, dragStartRef.current.smoothVx));
-    const speed = Math.min(Math.abs(instVx) * 3.5, 8);
+    dragStartRef.current.smoothVx += (rawVx - dragStartRef.current.smoothVx) * 0.28;
+    const instVx = Math.max(-10, Math.min(10, dragStartRef.current.smoothVx));
+    const speed = Math.min(Math.abs(instVx) * 3.0, 8);
 
     const cells = slots();
     if (cells.length === 0) return;
@@ -550,25 +606,26 @@ function MobileDock() {
     // Clamp strictly within the screen boundaries
     const clampedX = Math.max(screenWallMinX, Math.min(screenWallMaxX, resistedX));
 
-    // Dynamic jelly flex while dragging:
-    // Y scale stays proudly enlarged around DRAG_SCALE_Y (never collapsing to nav height)
-    // Speed adds horizontal momentum stretch, directly starting from DRAG_SCALE_X
+    // Smoothly blend scale from current lift scale to velocity-adjusted scale (zero jitter/shake!)
     const targetScaleX = DOCK_CONFIG.DRAG_SCALE_X * (1 + speed * DOCK_CONFIG.SPEED_MOMENTUM_FACTOR);
     const targetScaleY = DOCK_CONFIG.DRAG_SCALE_Y * (1 - speed * (DOCK_CONFIG.SPEED_MOMENTUM_FACTOR * 0.35));
 
-    const stretchX = Math.min(
+    const goalX = Math.min(
       DOCK_CONFIG.MAX_DRAG_SCALE_X,
       Math.max(DOCK_CONFIG.MIN_DRAG_SCALE_X, targetScaleX)
     );
-    const squashY = Math.min(
+    const goalY = Math.min(
       DOCK_CONFIG.MAX_DRAG_SCALE_Y,
       Math.max(DOCK_CONFIG.MIN_DRAG_SCALE_Y, targetScaleY)
     );
 
+    dragStartRef.current.scaleX += (goalX - dragStartRef.current.scaleX) * 0.25;
+    dragStartRef.current.scaleY += (goalY - dragStartRef.current.scaleY) * 0.25;
+
     gsap.set(pill, {
       x: clampedX,
-      scaleX: stretchX,
-      scaleY: squashY,
+      scaleX: dragStartRef.current.scaleX,
+      scaleY: dragStartRef.current.scaleY,
     });
     redraw();
 
@@ -784,8 +841,8 @@ function MobileDock() {
           max-width: 380px;
           height: ${DOCK_CONFIG.DOCK_HEIGHT}px;
           border-radius: 999px;
-          background: var(--background, #091512);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(156, 175, 136, 0.22);
+          background: rgba(11, 22, 18, 0.94);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(156, 175, 136, 0.34);
           pointer-events: auto;
           isolation: isolate;
           touch-action: none;
@@ -851,7 +908,7 @@ function MobileDock() {
         }
         .mln-pill {
           position: absolute;
-          top: ${DOCK_CONFIG.DOCK_PADDING}px;
+          top: ${DOCK_CONFIG.DOCK_PADDING -1 }px;
           left: 0;
           height: ${DOCK_CONFIG.PILL_HEIGHT}px;
           border-radius: 999px;

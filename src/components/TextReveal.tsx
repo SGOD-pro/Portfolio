@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { getActiveScroller } from "@/utils/scrollContainer";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -63,30 +64,50 @@ export default function TextReveal({
         Math.min(stagger, 0.32 / Math.max(1, letters.length)),
       );
 
-      const scrollerEl = document.querySelector(".terminal-scrollbar") || window;
+      if (!scrollTrigger) {
+        gsap.fromTo(
+          letters,
+          { opacity: 0, y: 12 },
+          {
+            opacity: 1,
+            y: 0,
+            duration,
+            stagger: effectiveStagger,
+            delay,
+            ease: "power2.out",
+            clearProps: "transform,will-change",
+          },
+        );
+        return;
+      }
 
-      gsap.fromTo(
-        letters,
+      const mm = gsap.matchMedia();
+      mm.add(
         {
-          opacity: 0,
-          y: 12,
+          isDesktop: "(min-width: 1024px)",
+          isMobile: "(max-width: 1023px)",
         },
-        {
-          opacity: 1,
-          y: 0,
-          duration,
-          stagger: effectiveStagger,
-          delay: scrollTrigger ? 0.04 : delay,
-          ease: "power2.out",
-          clearProps: "transform,will-change",
-          scrollTrigger: scrollTrigger
-            ? {
+        () => {
+          const scrollerEl = getActiveScroller();
+          gsap.fromTo(
+            letters,
+            { opacity: 0, y: 12 },
+            {
+              opacity: 1,
+              y: 0,
+              duration,
+              stagger: effectiveStagger,
+              delay: 0.04,
+              ease: "power2.out",
+              clearProps: "transform,will-change",
+              scrollTrigger: {
                 trigger: containerRef.current,
                 scroller: scrollerEl,
-                start: "top 88%",
+                start: "top 92%",
                 toggleActions: "play none none none",
-              }
-            : undefined,
+              },
+            },
+          );
         },
       );
     },
