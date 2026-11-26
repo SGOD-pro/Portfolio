@@ -6,6 +6,7 @@ import CommandBox from "@/components/CommandBox";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import React, { useCallback, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useGitHubStore } from "@/lib/store";
 import "./animation.css";
 
 function HomeLayout({
@@ -27,6 +28,29 @@ function HomeLayout({
       contentScrollRef.current.scrollTop = 0;
     }
   }, [pathname]);
+
+  // Pre-warm GitHub store in parallel during idle time so route switches have data ready without buffering
+  React.useEffect(() => {
+    const warm = () => {
+      const state = useGitHubStore.getState();
+      void Promise.all([
+        state.fetchProfile(),
+        state.fetchActivity(),
+        state.fetchProjects(),
+      ]);
+    };
+    const id =
+      typeof window !== "undefined" && "requestIdleCallback" in window
+        ? window.requestIdleCallback(warm, { timeout: 600 })
+        : setTimeout(warm, 200);
+    return () => {
+      if (typeof window !== "undefined" && "cancelIdleCallback" in window && typeof id === "number") {
+        window.cancelIdleCallback(id);
+      } else {
+        clearTimeout(id as ReturnType<typeof setTimeout>);
+      }
+    };
+  }, []);
 
   const [sceneCanvas, setSceneCanvas] = useState<HTMLCanvasElement | null>(
     null,
@@ -126,6 +150,7 @@ function HomeLayout({
       >
         <DotGrid
           onFrame={handleDotFrame}
+          intro={false}
           dotSize={3}
           gap={18}
           baseColor="#20332B"
@@ -139,7 +164,7 @@ function HomeLayout({
       </div>
 
       {/* Main Full-Page Shell */}
-      <main className="flex-1 w-full p-2 sm:p-3 md:p-4 flex flex-col lg:flex-row gap-3 md:gap-4 relative z-10 lg:h-full lg:max-h-full lg:overflow-hidden pb-16 sm:pb-20 lg:pb-4">
+      <main className="flex-1 w-full p-2 sm:p-3 md:p-4 flex flex-col lg:flex-row gap-3 md:gap-4 relative z-10 lg:h-full lg:max-h-full lg:overflow-hidden pb-20 lg:pb-4">
         {/* Left Panel: Consistent Shell (Header + Content + CommandBox Footer) */}
         <section className="flex-1 flex flex-col min-w-0 min-h-[500px] lg:h-full lg:overflow-hidden relative z-20">
           <GlassSurface
@@ -162,7 +187,7 @@ function HomeLayout({
             borderOpacity={0.09}
             tint="#ffffff"
             tintOpacity={0.01}
-            maxDpr={1.25}
+            maxDpr={1}
             className="w-full h-full flex flex-col p-4 sm:p-5 lg:p-6 lg:overflow-hidden"
           >
             {/* 1. Consistent Shell Header (Mac dots + title on all pages) */}
@@ -227,7 +252,7 @@ function HomeLayout({
             borderOpacity={0.09}
             tint="#ffffff"
             tintOpacity={0.01}
-            maxDpr={1.25}
+            maxDpr={1}
             className="w-full h-full p-4 sm:p-5 flex flex-col overflow-y-auto terminal-scrollbar"
           >
             {rightSide}

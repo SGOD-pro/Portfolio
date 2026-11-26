@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState, useCallback } from "react";
 
 interface MermaidBlockProps {
   code: string;
@@ -14,6 +14,9 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  // Natural height of the rendered SVG (px); 0 = not yet measured
+  const [svgNaturalHeight, setSvgNaturalHeight] = useState(0);
+  const svgWrapperRef = useRef<HTMLDivElement>(null);
 
   // Drag tracking
   const dragStartRef = useRef({ x: 0, y: 0 });
@@ -82,6 +85,36 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
     setPan({ x: 0, y: 0 });
   };
 
+  // Measure the SVG's actual rendered height (not viewBox units, which can be much larger)
+  const measureSvgHeight = useCallback(() => {
+    if (!svgWrapperRef.current) return;
+    const svg = svgWrapperRef.current.querySelector("svg");
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    if (rect.height > 0) {
+      const unscaled = rect.height / (zoom || 1);
+      setSvgNaturalHeight(Math.max(140, Math.min(Math.round(unscaled), 680)));
+    }
+  }, [zoom]);
+
+  // Re-measure whenever SVG HTML changes or container resizes
+  useEffect(() => {
+    if (!svgHtml) return;
+    const id = requestAnimationFrame(measureSvgHeight);
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") {
+      return () => cancelAnimationFrame(id);
+    }
+    const ro = new ResizeObserver(() => {
+      measureSvgHeight();
+    });
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(id);
+      ro.disconnect();
+    };
+  }, [svgHtml, measureSvgHeight]);
+
   // Native wheel handler with non-passive listener for Ctrl + Scroll zooming (preventing page zoom / scroll)
   useEffect(() => {
     const container = containerRef.current;
@@ -135,10 +168,13 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
     }
   };
 
-  // Touch handlers for mobile (Single finger pan + Two-finger pinch-to-zoom)
+  const isTouchPanActive = zoom > 1 || pan.x !== 0 || pan.y !== 0;
+
+  // Touch handlers for mobile (Single finger pan only when zoomed/panned + Two-finger pinch-to-zoom)
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length === 1) {
-      // Single finger drag
+      if (!isTouchPanActive) return;
+      // Single finger drag only when zoomed in or panned
       const touch = e.touches[0];
       setIsDragging(true);
       dragStartRef.current = {
@@ -199,14 +235,18 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
       setIsDragging(false);
       touchStateRef.current = null;
     } else if (e.touches.length === 1) {
-      // Transition back to single-finger drag
+      touchStateRef.current = null;
+      if (!isTouchPanActive) {
+        setIsDragging(false);
+        return;
+      }
+      // Transition back to single-finger drag when zoomed/panned
       const touch = e.touches[0];
       setIsDragging(true);
       dragStartRef.current = {
         x: touch.clientX - pan.x,
         y: touch.clientY - pan.y,
       };
-      touchStateRef.current = null;
     }
   };
 
@@ -215,12 +255,9 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
       ref={containerRef}
       className="my-4 rounded-xl border border-border bg-surface/80 backdrop-blur-md overflow-hidden font-mono text-xs shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
     >
-      {/* Control Header */}
+      {/* Control Header — no label, just controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-border bg-surface-secondary/40 text-[10px]">
         <div className="flex items-center gap-2">
-          <span className="uppercase tracking-wider font-semibold text-command font-mono text-[10px]">
-            MERMAID ARCHITECTURE DIAGRAM
-          </span>
           {error && (
             <span className="px-1.5 py-0.5 rounded bg-warning/10 text-warning text-[9px] border border-warning/20">
               SYNTAX FALLBACK
@@ -282,30 +319,37 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
-          style={{ touchAction: "none" }}
-          className={`relative w-full h-[460px] sm:h-[520px] overflow-hidden bg-[#070e0c]/90 select-none ${
+          className={`relative w-full overflow-hidden bg-[#070e0c]/90 select-none ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
           }`}
+          style={{
+            // Allow native vertical page scrolling on mobile when at 100% zoom & unpanned
+            touchAction: isTouchPanActive ? "none" : "pan-y",
+            // Dynamic height: rendered SVG height + padding (including space for bottom HUD); falls back to 280px before first measure
+            height: svgNaturalHeight > 0 ? `${svgNaturalHeight + 56}px` : "280px",
+            minHeight: "160px",
+          }}
           title="Drag to pan · Ctrl + Scroll to zoom · Pinch on mobile"
         >
           {/* Pan & Zoom Canvas */}
-          <div className="w-full h-full flex items-center justify-center p-4 pointer-events-none">
+          <div className="w-full h-full flex items-center justify-center p-4 pb-10 pointer-events-none">
             <div
+              ref={svgWrapperRef}
               style={{
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transformOrigin: "center center",
               }}
-              className="inline-block transition-transform duration-75 ease-out [&_svg]:max-w-none [&_svg]:overflow-visible [&_svg]:h-auto"
+              className="w-full flex items-center justify-center transition-transform duration-75 ease-out [&_svg]:max-w-full [&_svg]:h-auto"
               dangerouslySetInnerHTML={{ __html: svgHtml }}
             />
           </div>
 
           {/* Interactive Canvas HUD */}
           <div className="absolute bottom-2.5 left-3 flex items-center gap-2 pointer-events-none text-[9px] text-muted/80 font-mono bg-black/75 px-2.5 py-1.5 rounded-lg border border-border/70 backdrop-blur-md shadow-md">
-            <span>🖱 Drag to pan</span>
-            <span>·</span>
-            <span className="hidden sm:inline">Ctrl + Scroll to zoom</span>
-            <span className="sm:hidden">Pinch to zoom</span>
+            <span className="hidden sm:inline">🖱 Drag to pan · Ctrl + Scroll to zoom</span>
+            <span className="sm:hidden">
+              {isTouchPanActive ? "Drag to pan · Pinch to zoom" : "Pinch or + to zoom"}
+            </span>
             {(pan.x !== 0 || pan.y !== 0 || zoom !== 1) && (
               <>
                 <span>·</span>

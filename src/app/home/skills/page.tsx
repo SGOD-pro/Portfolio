@@ -529,6 +529,7 @@ export default function SkillsPage() {
               target="_blank"
               rel="noopener noreferrer"
               className="achievement-card group rounded-xl border border-border bg-surface/80 backdrop-blur-md p-4 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex flex-col justify-between transition-[background-color,border-color] duration-150 hover:border-command/40 hover:bg-surface min-w-0 cursor-pointer text-left block"
+              style={{ contentVisibility: "auto", containIntrinsicSize: "auto 210px" }}
               title={`Open ${cert.title} in Google Drive`}
             >
               <div>

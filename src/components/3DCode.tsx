@@ -349,14 +349,27 @@ export default function InteractiveCodeIcon({
 }: InteractiveCodeIconProps) {
   const [isInteracting, setIsInteracting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [resetCounter, setResetCounter] = useState(0);
   const [contextLost, setContextLost] = useState(false);
   const canRender3D = useCanRender3D();
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<OrbitControlsLike | null>(null);
   const initialPolarRef = useRef<number | null>(null);
   const resetStateRef = useRef<ControlsResetState>({ active: false, targetPolar: 0, targetAzimuth: 0 });
 
   const stableId = useId();
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { rootMargin: "100px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   if (!canRender3D || contextLost) {
     return <StaticCodeFallback color={color} height={height} />;
@@ -375,6 +388,7 @@ export default function InteractiveCodeIcon({
 
   return (
     <div
+      ref={wrapperRef}
       style={{ width, height, background, position: "relative" }}
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={() => setIsHovered(false)}
@@ -383,7 +397,7 @@ export default function InteractiveCodeIcon({
         <Canvas
           key={stableId}
           camera={{ position: [0, 0, 4.5], fov: 45 }}
-          frameloop={autoRotate ? "always" : "demand"}
+          frameloop={autoRotate && isVisible ? "always" : "demand"}
           gl={{
             antialias: true,
             alpha: true,
@@ -397,7 +411,7 @@ export default function InteractiveCodeIcon({
               console.warn("WebGL context lost on 3D canvas; rendering static fallback");
               setContextLost(true);
             });
-            gl.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1, 2));
+            gl.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1, 1.5));
             gl.shadowMap.enabled = false;
             gl.toneMapping = THREE.ACESFilmicToneMapping;
             gl.toneMappingExposure = 1.2;

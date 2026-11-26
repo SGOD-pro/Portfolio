@@ -245,33 +245,53 @@ function MobileDock() {
         DOCK_CONFIG.PILL_WIDTH > 0
           ? DOCK_CONFIG.PILL_WIDTH
           : cellWidth + DOCK_CONFIG.PILL_EXTRA_WIDTH;
-      pill.style.width = baseWidth + "px";
 
-      const x = layer.offsetLeft + cell.offsetLeft + (cellWidth - baseWidth) / 2;
+      // Read the target X BEFORE mutating pill.style.width to avoid an extra layout reflow
+      const targetX = layer.offsetLeft + cell.offsetLeft + (cellWidth - baseWidth) / 2;
 
       if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) {
         gsap.killTweensOf(pill);
-        gsap.set(pill, { x, scale: 1, scaleX: 1, scaleY: 1 });
+        pill.style.width = baseWidth + "px";
+        gsap.set(pill, { x: targetX, scale: 1, scaleX: 1, scaleY: 1 });
         redraw();
         return;
       }
 
+      // Read the pill's current animated x BEFORE any DOM mutation so we get the live tweened value
       const rawCurrentX = gsap.getProperty(pill, "x");
-      const currentX = typeof rawCurrentX === "number" && !Number.isNaN(rawCurrentX) ? rawCurrentX : x;
-      const distance = Math.abs(x - currentX);
+      const currentX = typeof rawCurrentX === "number" && !Number.isNaN(rawCurrentX) ? rawCurrentX : targetX;
+      const distance = Math.abs(targetX - currentX);
 
       gsap.killTweensOf(pill);
+
+      // Commit the new width NOW (after all layout reads are done)
+      pill.style.width = baseWidth + "px";
 
       if (distance < 1) {
         // Still settle any lift scale cleanly with jelly bounce
         gsap.to(pill, {
-          x,
+          x: targetX,
           scale: 1.0,
           scaleX: 1.0,
           scaleY: 1.0,
           duration: DOCK_CONFIG.RELEASE_DURATION,
           ease: DOCK_CONFIG.RELEASE_EASE,
           onUpdate: redraw,
+        });
+        return;
+      }
+
+      // --- Short distance (adjacent tabs): skip stretch/squash, use a single smooth tween ---
+      // This is the main fix for the Me↔Skills jitter: fewer GSAP phases = fewer compositor conflicts
+      if (distance < 80) {
+        gsap.to(pill, {
+          x: targetX,
+          scaleX: 1.0,
+          scaleY: 1.0,
+          duration: DOCK_CONFIG.TAP_TRANSIT_DURATION,
+          ease: "power3.out",
+          onUpdate: redraw,
+          onComplete: redraw,
         });
         return;
       }
@@ -286,7 +306,7 @@ function MobileDock() {
 
       // Phase 1: Rapid elastic transit with jelly stretch & squash
       tl.to(pill, {
-        x,
+        x: targetX,
         scaleX: stretchFactor,
         scaleY: squashFactor,
         duration: DOCK_CONFIG.TAP_TRANSIT_DURATION,

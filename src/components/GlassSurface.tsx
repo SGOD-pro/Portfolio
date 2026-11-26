@@ -652,8 +652,8 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
       };
       element.addEventListener("glass-refresh", refreshSource);
       element.addEventListener("glass-redraw", redrawSync);
-      window.addEventListener("resize", requestDraw);
-      window.addEventListener("scroll", requestDraw, true);
+      window.addEventListener("resize", requestDraw, { passive: true });
+      window.addEventListener("scroll", requestDraw, { passive: true, capture: true });
       const onVisibility = () => {
         if (document.hidden) {
           cancelAnimationFrame(frame);
