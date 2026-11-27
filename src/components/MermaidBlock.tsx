@@ -28,13 +28,49 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
     lastCenter: { x: number; y: number };
   } | null>(null);
 
+  const [shouldRender, setShouldRender] = useState(false);
+
+  // Only trigger heavy mermaid import & SVG layout when diagram approaches viewport
   useEffect(() => {
+    if (shouldRender) return;
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      const id = requestAnimationFrame(() => setShouldRender(true));
+      return () => cancelAnimationFrame(id);
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldRender(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  useEffect(() => {
+    if (!shouldRender) return;
     let isCancelled = false;
+
+    async function yieldToMain() {
+      const w = window as unknown as { scheduler?: { yield?: () => Promise<void> } };
+      if (w.scheduler && typeof w.scheduler.yield === "function") {
+        await w.scheduler.yield();
+      } else {
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      }
+    }
 
     async function renderDiagram() {
       try {
         setError(null);
         const mermaid = (await import("mermaid")).default;
+        if (isCancelled) return;
+        await yieldToMain();
+        if (isCancelled) return;
         mermaid.initialize({
           startOnLoad: false,
           theme: "dark",
@@ -76,7 +112,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
     return () => {
       isCancelled = true;
     };
-  }, [code, uniqueId]);
+  }, [code, uniqueId, shouldRender]);
 
   const handleZoomIn = () => setZoom((z) => Math.min(5.0, Number((z + 0.25).toFixed(2))));
   const handleZoomOut = () => setZoom((z) => Math.max(0.4, Number((z - 0.25).toFixed(2))));
@@ -346,7 +382,7 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
 
           {/* Interactive Canvas HUD */}
           <div className="absolute bottom-2.5 left-3 flex items-center gap-2 pointer-events-none text-[9px] text-muted/80 font-mono bg-black/75 px-2.5 py-1.5 rounded-lg border border-border/70 backdrop-blur-md shadow-md">
-            <span className="hidden sm:inline">🖱 Drag to pan · Ctrl + Scroll to zoom</span>
+            <span className="hidden sm:inline">Drag to pan · Ctrl + Scroll to zoom</span>
             <span className="sm:hidden">
               {isTouchPanActive ? "Drag to pan · Pinch to zoom" : "Pinch or + to zoom"}
             </span>

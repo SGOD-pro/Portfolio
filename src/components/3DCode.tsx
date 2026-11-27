@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState, useEffect, useId, useSyncExternalStor
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
 import { StaticCodeFallback } from "./StaticCodeFallback";
 
@@ -28,6 +29,7 @@ type CodeIcon3DProps = {
   resetOnRelease?: boolean;
   resetRotationTrigger?: number;
   materialType?: "clay" | "metallic" | "plastic" | "glossy" | "glass";
+  pointerOffsetRef?: React.MutableRefObject<{ x: number; y: number; active: boolean }>;
 };
 
 const buildMaterial = (
@@ -42,47 +44,51 @@ const buildMaterial = (
       return new THREE.MeshPhysicalMaterial({
         color,
         emissive: emissiveColor,
-        emissiveIntensity: 0.08,
+        emissiveIntensity: 0.06,
         metalness: Math.min(metalness * 0.1, 0.1),
-        roughness: Math.min(roughness * 0.1, 0.1),
-        transmission: 0.9,
+        roughness: Math.min(roughness * 0.1, 0.12),
+        transmission: 0.85,
         transparent: true,
-        opacity: 0.7,
-        ior: 1.5,
+        opacity: 0.78,
+        ior: 1.48,
         thickness: 0.6,
         clearcoat: 1,
-        clearcoatRoughness: 0.1,
+        clearcoatRoughness: 0.08,
+        envMapIntensity: 1.1,
         side: THREE.DoubleSide,
       });
     case "glossy":
       return new THREE.MeshPhysicalMaterial({
         color,
         emissive: emissiveColor,
-        emissiveIntensity: 0.16,
-        metalness: metalness ?? 0.6,
-        roughness: roughness ?? 0.1,
-        clearcoat: 1,
-        clearcoatRoughness: 0.05,
+        emissiveIntensity: 0.1,
+        metalness: metalness ?? 0.35,
+        roughness: roughness ?? 0.18,
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.08,
+        envMapIntensity: 0.95,
         side: THREE.DoubleSide,
       });
     case "metallic":
       return new THREE.MeshPhysicalMaterial({
         color,
         emissive: emissiveColor,
-        emissiveIntensity: 0.18,
-        metalness: metalness ?? 1,
-        roughness: roughness ?? 0.15,
-        clearcoat: 0.6,
-        clearcoatRoughness: 0.08,
+        emissiveIntensity: 0.08,
+        metalness: metalness ?? 0.85,
+        roughness: roughness ?? 0.2,
+        clearcoat: 0.5,
+        clearcoatRoughness: 0.1,
+        envMapIntensity: 1.0,
         side: THREE.DoubleSide,
       });
     case "plastic":
       return new THREE.MeshStandardMaterial({
         color,
         emissive: emissiveColor,
-        emissiveIntensity: 0.1,
-        metalness: metalness !== undefined ? metalness * 0.4 : 0.2,
-        roughness: roughness ?? 0.45,
+        emissiveIntensity: 0.08,
+        metalness: metalness !== undefined ? metalness * 0.3 : 0.15,
+        roughness: roughness ?? 0.42,
+        envMapIntensity: 0.8,
         side: THREE.DoubleSide,
       });
     case "clay":
@@ -90,13 +96,44 @@ const buildMaterial = (
       return new THREE.MeshStandardMaterial({
         color,
         emissive: emissiveColor,
-        emissiveIntensity: 0.08,
-        metalness: metalness !== undefined ? metalness * 0.2 : 0.1,
-        roughness: roughness ?? 0.85,
+        emissiveIntensity: 0.06,
+        metalness: metalness !== undefined ? metalness * 0.15 : 0.08,
+        roughness: roughness ?? 0.82,
+        envMapIntensity: 0.6,
         side: THREE.DoubleSide,
       });
   }
 };
+
+/**
+ * Generates a lightweight procedural studio environment map via PMREMGenerator + RoomEnvironment
+ * so physical/metallic materials have natural reflections with zero external HDR downloads.
+ */
+function ProceduralStudioEnvironment() {
+  const gl = useThree((s) => s.gl);
+
+  const envBundle = useMemo(() => {
+    try {
+      const pmrem = new THREE.PMREMGenerator(gl);
+      pmrem.compileEquirectangularShader();
+      const room = new RoomEnvironment();
+      const envRT = pmrem.fromScene(room, 0.04);
+      room.dispose();
+      pmrem.dispose();
+      return envRT;
+    } catch {
+      return null;
+    }
+  }, [gl]);
+
+  useEffect(() => {
+    return () => {
+      envBundle?.dispose();
+    };
+  }, [envBundle]);
+
+  return envBundle ? <primitive object={envBundle.texture} attach="environment" /> : null;
+}
 
 function CodeIcon3D({
   extrudeDepth = 0.6,
@@ -104,8 +141,8 @@ function CodeIcon3D({
   emissiveColor = "#3F1A13",
   size = 3,
   rotationSpeed = 0.3,
-  metalness = 0.5,
-  roughness = 0.8,
+  metalness = 0.45,
+  roughness = 0.25,
   bevelEnabled = true,
   bevelThickness = 0.1,
   bevelSize = 0.05,
@@ -117,6 +154,7 @@ function CodeIcon3D({
   resetOnRelease = true,
   resetRotationTrigger,
   materialType = "glossy",
+  pointerOffsetRef,
 }: CodeIcon3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [internalHovered, setInternalHovered] = useState(false);
@@ -132,19 +170,16 @@ function CodeIcon3D({
       bevelEnabled,
       bevelThickness,
       bevelSize,
-      bevelSegments: 4,
-      curveSegments: 12,
+      bevelSegments: 2,
+      curveSegments: 8,
     };
+    const sharedMaterial = buildMaterial(materialType, color, emissiveColor, metalness, roughness);
     const meshes: THREE.Mesh[] = [];
     svgData.paths.forEach((path) => {
       SVGLoader.createShapes(path).forEach((shape: THREE.Shape) => {
         const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         geometry.computeVertexNormals();
-        const mesh = new THREE.Mesh(
-          geometry,
-          buildMaterial(materialType, color, emissiveColor, metalness, roughness)
-        );
-        meshes.push(mesh);
+        meshes.push(new THREE.Mesh(geometry, sharedMaterial));
       });
     });
     const group = new THREE.Group();
@@ -171,11 +206,17 @@ function CodeIcon3D({
 
   useEffect(() => {
     return () => {
+      const disposedMaterials = new Set<THREE.Material>();
       iconGroup.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.geometry?.dispose();
-          if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
-          else child.material?.dispose?.();
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach((m) => {
+            if (m && !disposedMaterials.has(m)) {
+              disposedMaterials.add(m);
+              m.dispose();
+            }
+          });
         }
       });
     };
@@ -193,25 +234,35 @@ function CodeIcon3D({
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-    if (resetToOrigin.current && !isInteracting) {
-      groupRef.current.rotation.x = THREE.MathUtils.damp(groupRef.current.rotation.x, 0, 3.5, delta);
-      groupRef.current.rotation.z = THREE.MathUtils.damp(groupRef.current.rotation.z, 0, 3.5, delta);
-      groupRef.current.rotation.y = THREE.MathUtils.damp(groupRef.current.rotation.y, 0, 3.5, delta);
+    const dt = Math.min(delta, 0.05);
+
+    // Gentle magnetic tilt toward mouse cursor when hovering (desktop)
+    const ptr = pointerOffsetRef?.current;
+    if (ptr && ptr.active && !isInteracting) {
+      const targetTiltX = -ptr.y * 0.28;
+      const targetTiltZ = -ptr.x * 0.14;
+      groupRef.current.rotation.x = THREE.MathUtils.damp(groupRef.current.rotation.x, targetTiltX, 6, dt);
+      groupRef.current.rotation.z = THREE.MathUtils.damp(groupRef.current.rotation.z, targetTiltZ, 6, dt);
+      groupRef.current.rotation.y += dt * (rotationSpeed * 0.25);
       invalidate();
+      return;
+    }
+
+    if (resetToOrigin.current && !isInteracting) {
+      groupRef.current.rotation.x = THREE.MathUtils.damp(groupRef.current.rotation.x, 0, 4, dt);
+      groupRef.current.rotation.z = THREE.MathUtils.damp(groupRef.current.rotation.z, 0, 4, dt);
       if (
-        Math.abs(groupRef.current.rotation.x) < 0.001 &&
-        Math.abs(groupRef.current.rotation.z) < 0.001 &&
-        Math.abs(groupRef.current.rotation.y) < 0.001
+        Math.abs(groupRef.current.rotation.x) < 0.002 &&
+        Math.abs(groupRef.current.rotation.z) < 0.002
       ) {
         groupRef.current.rotation.x = 0;
-        groupRef.current.rotation.y = 0;
         groupRef.current.rotation.z = 0;
         resetToOrigin.current = false;
       }
-      return;
     }
+
     if (autoRotate && !isInteracting && !(pauseOnHover && isHovered)) {
-      groupRef.current.rotation.y += delta * rotationSpeed;
+      groupRef.current.rotation.y += dt * rotationSpeed;
       invalidate();
     }
   });
@@ -219,13 +270,17 @@ function CodeIcon3D({
   return (
     <group
       ref={groupRef}
-      onPointerEnter={() => {
-        setInternalHovered(true);
-        if (onHover) onHover(true);
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") {
+          setInternalHovered(true);
+          onHover?.(true);
+        }
       }}
-      onPointerLeave={() => {
-        setInternalHovered(false);
-        if (onHover) onHover(false);
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") {
+          setInternalHovered(false);
+          onHover?.(false);
+        }
       }}
     >
       <primitive object={iconGroup} />
@@ -235,6 +290,7 @@ function CodeIcon3D({
 
 type OrbitControlsLike = {
   getPolarAngle: () => number;
+  getAzimuthalAngle: () => number;
   setPolarAngle: (a: number) => void;
   setAzimuthalAngle: (a: number) => void;
   update: () => void;
@@ -245,19 +301,36 @@ type ControlsResetState = { active: boolean; targetPolar: number; targetAzimuth:
 function ControlsResetter({
   controlsRef,
   resetStateRef,
+  isInteracting,
 }: {
   controlsRef: React.MutableRefObject<OrbitControlsLike | null>;
   resetStateRef: React.MutableRefObject<ControlsResetState>;
+  isInteracting: boolean;
 }) {
+  const { invalidate } = useThree();
+
   useFrame((_, delta) => {
     const controls = controlsRef.current;
-    if (!controls || !resetStateRef.current.active) return;
+    if (!controls || !resetStateRef.current.active || isInteracting) return;
+
+    const dt = Math.min(delta, 0.05);
     const currentPolar = controls.getPolarAngle();
-    const nextPolar = THREE.MathUtils.damp(currentPolar, resetStateRef.current.targetPolar, 2.2, delta);
+    const currentAzimuth = controls.getAzimuthalAngle();
+    const nextPolar = THREE.MathUtils.damp(currentPolar, resetStateRef.current.targetPolar, 3.2, dt);
+    const nextAzimuth = THREE.MathUtils.damp(currentAzimuth, resetStateRef.current.targetAzimuth, 3.2, dt);
+
     controls.setPolarAngle(nextPolar);
-    controls.setAzimuthalAngle(resetStateRef.current.targetAzimuth);
+    controls.setAzimuthalAngle(nextAzimuth);
     controls.update();
-    if (Math.abs(nextPolar - resetStateRef.current.targetPolar) < 0.001) {
+    invalidate();
+
+    if (
+      Math.abs(nextPolar - resetStateRef.current.targetPolar) < 0.002 &&
+      Math.abs(nextAzimuth - resetStateRef.current.targetAzimuth) < 0.002
+    ) {
+      controls.setPolarAngle(resetStateRef.current.targetPolar);
+      controls.setAzimuthalAngle(resetStateRef.current.targetAzimuth);
+      controls.update();
       resetStateRef.current.active = false;
     }
   });
@@ -271,13 +344,13 @@ function checkWebGL2Support(): boolean {
   if (cachedWebGL2Support !== null) return cachedWebGL2Support;
   try {
     const canvas = document.createElement("canvas");
-    const gl = !!(window.WebGL2RenderingContext && canvas.getContext("webgl2"));
-    if (gl) {
-      const ctx = canvas.getContext("webgl2");
-      ctx?.getExtension("WEBGL_lose_context")?.loseContext();
-    }
-    cachedWebGL2Support = gl;
-    return gl;
+    const ctx = window.WebGL2RenderingContext
+      ? canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: false })
+      : null;
+    const supported = !!ctx;
+    ctx?.getExtension("WEBGL_lose_context")?.loseContext();
+    cachedWebGL2Support = supported;
+    return supported;
   } catch {
     cachedWebGL2Support = false;
     return false;
@@ -301,7 +374,7 @@ function useCanRender3D() {
   );
 }
 
-type InteractiveCodeIconProps = Omit<CodeIcon3DProps, "onHover"> & {
+type InteractiveCodeIconProps = Omit<CodeIcon3DProps, "onHover" | "pointerOffsetRef"> & {
   width?: string | number;
   height?: string | number;
   background?: string;
@@ -340,6 +413,7 @@ export default function InteractiveCodeIcon({
   height = "100%",
   background = "transparent",
   enableZoom = false,
+  enableEnvironment = true,
   resetOnRelease = true,
   color = "#D63825",
   autoRotate = true,
@@ -356,7 +430,9 @@ export default function InteractiveCodeIcon({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<OrbitControlsLike | null>(null);
   const initialPolarRef = useRef<number | null>(null);
-  const resetStateRef = useRef<ControlsResetState>({ active: false, targetPolar: 0, targetAzimuth: 0 });
+  const resetStateRef = useRef<ControlsResetState>({ active: false, targetPolar: Math.PI / 2, targetAzimuth: 0 });
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerOffsetRef = useRef({ x: 0, y: 0, active: false });
 
   const stableId = useId();
 
@@ -368,36 +444,64 @@ export default function InteractiveCodeIcon({
       { rootMargin: "100px" }
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
   }, []);
 
   if (!canRender3D || contextLost) {
     return <StaticCodeFallback color={color} height={height} />;
   }
 
-  const handleReset = () => {
-    setResetCounter((prev) => prev + 1);
-    if (controlsRef.current) {
-      resetStateRef.current = {
-        active: true,
-        targetPolar: initialPolarRef.current ?? Math.PI / 2,
-        targetAzimuth: 0,
-      };
-    }
+  const scheduleReset = () => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    // Let OrbitControls inertia play out briefly after release before gently settling back
+    resetTimerRef.current = setTimeout(() => {
+      setResetCounter((prev) => prev + 1);
+      if (controlsRef.current) {
+        resetStateRef.current = {
+          active: true,
+          targetPolar: initialPolarRef.current ?? Math.PI / 2,
+          targetAzimuth: 0,
+        };
+      }
+    }, 900);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || !wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+    pointerOffsetRef.current = { x: nx, y: ny, active: true };
   };
 
   return (
     <div
       ref={wrapperRef}
-      style={{ width, height, background, position: "relative" }}
-      onPointerEnter={() => setIsHovered(true)}
-      onPointerLeave={() => setIsHovered(false)}
+      style={{ width, height, background, position: "relative", touchAction: "none" }}
+      className={isInteracting ? "cursor-grabbing" : "cursor-grab"}
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") {
+          setIsHovered(true);
+          pointerOffsetRef.current.active = true;
+        }
+      }}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") {
+          setIsHovered(false);
+          pointerOffsetRef.current = { x: 0, y: 0, active: false };
+        }
+      }}
     >
       <WebGLErrorBoundary fallback={<StaticCodeFallback color={color} height={height} />}>
         <Canvas
           key={stableId}
           camera={{ position: [0, 0, 4.5], fov: 45 }}
-          frameloop={autoRotate && isVisible ? "always" : "demand"}
+          frameloop={isVisible && (autoRotate || isInteracting || isHovered) ? "always" : "demand"}
           gl={{
             antialias: true,
             alpha: true,
@@ -411,17 +515,20 @@ export default function InteractiveCodeIcon({
               console.warn("WebGL context lost on 3D canvas; rendering static fallback");
               setContextLost(true);
             });
-            gl.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1, 1.5));
+            const maxDpr = typeof window !== "undefined" && window.innerWidth < 1024 ? 1.25 : 1.5;
+            gl.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio ?? 1 : 1, maxDpr));
             gl.shadowMap.enabled = false;
             gl.toneMapping = THREE.ACESFilmicToneMapping;
-            gl.toneMappingExposure = 1.2;
+            gl.toneMappingExposure = 1.05;
           }}
         >
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[6, 6, 6]} intensity={1.8} color="#F7F7F2" />
-          <directionalLight position={[-6, -3, 4]} intensity={0.8} color="#243E33" />
-          <pointLight position={[-4, -3, 4]} intensity={0.8} color="#9CAF88" />
-          <pointLight position={[4, 3, -4]} intensity={0.6} color="#9CAF88" />
+          {enableEnvironment && <ProceduralStudioEnvironment />}
+
+          {/* Natural 3-point studio lighting + sky/ground hemisphere bounce */}
+          <hemisphereLight args={["#F7F7F2", "#14231D", 0.75]} />
+          <directionalLight position={[5, 6, 6]} intensity={1.65} color="#FFF8F0" />
+          <directionalLight position={[-5, 2, 4]} intensity={0.75} color="#D4E0D0" />
+          <directionalLight position={[0, -4, -5]} intensity={0.6} color="#FFD8C8" />
 
           <React.Suspense fallback={null}>
             <CodeIcon3D
@@ -435,6 +542,7 @@ export default function InteractiveCodeIcon({
               resetOnRelease={resetOnRelease}
               resetRotationTrigger={resetCounter}
               onHover={setIsHovered}
+              pointerOffsetRef={pointerOffsetRef}
             />
 
             <OrbitControls
@@ -447,19 +555,32 @@ export default function InteractiveCodeIcon({
               }}
               enableZoom={enableZoom}
               enablePan={false}
-              dampingFactor={0.05}
+              rotateSpeed={0.95}
+              dampingFactor={0.07}
               enableDamping={true}
               autoRotate={false}
-              onStart={() => setIsInteracting(true)}
+              touches={{
+                ONE: THREE.TOUCH.ROTATE,
+                TWO: enableZoom ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.ROTATE,
+              }}
+              onStart={() => {
+                if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+                resetStateRef.current.active = false;
+                setIsInteracting(true);
+              }}
               onEnd={() => {
                 setIsInteracting(false);
                 if (resetOnRelease) {
-                  handleReset();
+                  scheduleReset();
                 }
               }}
             />
 
-            <ControlsResetter controlsRef={controlsRef} resetStateRef={resetStateRef} />
+            <ControlsResetter
+              controlsRef={controlsRef}
+              resetStateRef={resetStateRef}
+              isInteracting={isInteracting}
+            />
           </React.Suspense>
         </Canvas>
       </WebGLErrorBoundary>

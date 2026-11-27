@@ -458,7 +458,7 @@ function CommandBox() {
                 key={tag}
                 href={targetRoute}
                 aria-current={isActive ? "page" : undefined}
-                className={`rounded px-2.5 py-0.5 text-[10px] sm:text-[11px] transition-all font-mono min-h-[24px] inline-flex items-center justify-center ${
+                className={`rounded px-2.5 py-0.5 text-[10px] sm:text-[11px] transition-colors font-mono min-h-[24px] inline-flex items-center justify-center ${
                   isActive
                     ? "border border-command text-command bg-command/20 font-semibold shadow-[0_0_8px_rgba(156,175,136,0.25)]"
                     : "border border-border text-muted hover:text-foreground hover:border-command/40 hover:bg-surface-secondary/40"

@@ -1,12 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(useGSAP);
-}
+import React from "react";
 
 interface AnimatedLanguageBarProps {
   percentage: number; // 0 to 100
@@ -19,35 +13,7 @@ export default function AnimatedLanguageBar({
   color,
   className = "",
 }: AnimatedLanguageBarProps) {
-  const fillRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      if (!fillRef.current) return;
-      if (typeof window === "undefined") return;
-
-      const targetScale = Math.min(1, Math.max(0.01, percentage / 100));
-
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        gsap.set(fillRef.current, { scaleX: targetScale });
-        return;
-      }
-
-      gsap.fromTo(
-        fillRef.current,
-        { scaleX: 0 },
-        {
-          scaleX: targetScale,
-          duration: 0.45,
-          ease: "power2.out",
-        }
-      );
-    },
-    {
-      scope: fillRef,
-      dependencies: [percentage],
-    }
-  );
+  const targetScale = Math.min(1, Math.max(0.01, percentage / 100));
 
   return (
     <div
@@ -59,9 +25,8 @@ export default function AnimatedLanguageBar({
       aria-label={`Language share: ${percentage.toFixed(1)}%`}
     >
       <div
-        ref={fillRef}
-        className={`h-full rounded-full origin-left ${color}`}
-        style={{ transform: "scaleX(0)" }}
+        className={`h-full rounded-full origin-left lang-bar-fill ${color}`}
+        style={{ "--bar-scale": targetScale } as React.CSSProperties}
       />
     </div>
   );

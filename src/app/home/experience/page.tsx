@@ -59,7 +59,7 @@ function Experience() {
             </p>
           </div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-mono">
-            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
             <span>Open for engineering roles</span>
           </div>
         </div>

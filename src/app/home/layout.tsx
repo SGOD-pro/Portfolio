@@ -63,14 +63,24 @@ function HomeLayout({
   } | null>(null);
   const lastRefreshTimeRef = useRef(0);
 
+  const reducedMotionRef = useRef(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    reducedMotionRef.current = mql.matches;
+    const onChange = (e: MediaQueryListEvent) => {
+      reducedMotionRef.current = e.matches;
+    };
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
   const handleDotFrame = useCallback((source: HTMLCanvasElement) => {
     if (!source.width || !source.height) return;
 
     // Skip canvas copy if reduced motion is preferred or document is hidden
-    if (
-      typeof window !== "undefined" &&
-      (document.hidden || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-    ) {
+    if (document.hidden || reducedMotionRef.current) {
       return;
     }
 

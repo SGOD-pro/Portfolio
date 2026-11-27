@@ -21,7 +21,7 @@ export function StaticCodeFallback({
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 16 16"
-          className="w-20 h-20 drop-shadow-[0_0_18px_rgba(214,56,37,0.35)] transition-transform hover:scale-105"
+          className="w-20 h-20"
           fill="none"
         >
           <path

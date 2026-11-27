@@ -1,14 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { getActiveScroller } from "@/utils/scrollContainer";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(useGSAP, ScrollTrigger);
-}
+import React, { useEffect, useRef, useState } from "react";
 
 interface TextRevealProps {
   text: string;
@@ -21,13 +13,10 @@ interface TextRevealProps {
 }
 
 /**
- * Snappy Kinetic Letter-by-Letter Page Header Text Reveal using GSAP.
- * - Each letter/character smoothly fades in from bottom to top (opacity 0 -> 1, y 8 -> 0).
- * - Words are wrapped in inline-block spans to preserve clean responsive wrapping.
- * - Fast, non-blocking duration (0.28s) with crisp stagger (0.015s).
- * - Full screen-reader accessibility: text preserved via aria-label.
- * - Respects prefers-reduced-motion: settles immediately.
- * - Supports scrollTrigger to animate only when scrolled into view.
+ * Pure CSS Compositor-Thread Kinetic Letter-by-Letter Text Reveal.
+ * - Uses CSS @keyframes (opacity + transform) instead of GSAP JS tweens so main-thread JS stays free.
+ * - Optional scrollTrigger uses lightweight native IntersectionObserver to add `.text-reveal-active`.
+ * - Defaults to visible static state under prefers-reduced-motion: reduce.
  */
 export default function TextReveal({
   text,
@@ -39,103 +28,75 @@ export default function TextReveal({
   scrollTrigger = false,
 }: TextRevealProps) {
   const containerRef = useRef<HTMLElement>(null);
+  const [revealed, setRevealed] = useState(!scrollTrigger);
 
-  useGSAP(
-    () => {
-      if (!containerRef.current) return;
-      if (typeof window === "undefined") return;
+  useEffect(() => {
+    if (!scrollTrigger || revealed) return;
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      const id = requestAnimationFrame(() => setRevealed(true));
+      return () => cancelAnimationFrame(id);
+    }
 
-      const letters =
-        containerRef.current.querySelectorAll<HTMLSpanElement>(".reveal-char");
-      if (letters.length === 0) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRevealed(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -4% 0px" }
+    );
 
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        gsap.set(letters, {
-          opacity: 1,
-          y: 0,
-          clearProps: "opacity,transform",
-        });
-        return;
-      }
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [scrollTrigger, revealed]);
 
-      // Smooth organic character float-in capped so long headings don't lag
-      const effectiveStagger = Math.max(
-        0.008,
-        Math.min(stagger, 0.32 / Math.max(1, letters.length)),
-      );
-
-      if (!scrollTrigger) {
-        gsap.fromTo(
-          letters,
-          { opacity: 0, y: 12 },
-          {
-            opacity: 1,
-            y: 0,
-            duration,
-            stagger: effectiveStagger,
-            delay,
-            ease: "power2.out",
-            clearProps: "transform,will-change",
-          },
-        );
-        return;
-      }
-
-      const mm = gsap.matchMedia();
-      mm.add(
-        {
-          isDesktop: "(min-width: 1024px)",
-          isMobile: "(max-width: 1023px)",
-        },
-        () => {
-          const scrollerEl = getActiveScroller();
-          gsap.fromTo(
-            letters,
-            { opacity: 0, y: 12 },
-            {
-              opacity: 1,
-              y: 0,
-              duration,
-              stagger: effectiveStagger,
-              delay: 0.04,
-              ease: "power2.out",
-              clearProps: "transform,will-change",
-              scrollTrigger: {
-                trigger: containerRef.current,
-                scroller: scrollerEl,
-                start: "top 92%",
-                toggleActions: "play none none none",
-              },
-            },
-          );
-        },
-      );
-    },
-    {
-      scope: containerRef,
-      dependencies: [text, delay, duration, stagger, scrollTrigger],
-      revertOnUpdate: true,
-    },
+  const totalChars = text.length;
+  const effectiveStagger = Math.max(
+    0.008,
+    Math.min(stagger, 0.32 / Math.max(1, totalChars))
   );
+  const effectiveDelay = scrollTrigger ? 0.04 : delay;
 
   const words = text.split(" ");
+  let charCounter = 0;
 
   return (
     <Component
       ref={containerRef as React.Ref<never>}
-      className={className}
+      className={`${className} ${revealed ? "text-reveal-active" : "text-reveal-pending"}`}
       aria-label={text}
+      style={
+        {
+          "--reveal-duration": `${duration}s`,
+          "--reveal-delay": `${effectiveDelay}s`,
+          "--reveal-stagger": `${effectiveStagger}s`,
+        } as React.CSSProperties
+      }
     >
       <span aria-hidden="true" className="inline">
         {words.map((word, wordIdx) => (
           <span key={wordIdx} className="inline-block whitespace-nowrap">
-            {Array.from(word).map((char, charIdx) => (
-              <span key={charIdx} className="reveal-char inline-block">
-                {char}
-              </span>
-            ))}
+            {Array.from(word).map((char, charIdx) => {
+              const idx = charCounter++;
+              return (
+                <span
+                  key={charIdx}
+                  className="reveal-char inline-block"
+                  style={{ "--char-i": idx } as React.CSSProperties}
+                >
+                  {char}
+                </span>
+              );
+            })}
             {wordIdx < words.length - 1 && (
-              <span className="reveal-char inline-block">&nbsp;</span>
+              <span
+                className="reveal-char inline-block"
+                style={{ "--char-i": charCounter++ } as React.CSSProperties}
+              >
+                &nbsp;
+              </span>
             )}
           </span>
         ))}

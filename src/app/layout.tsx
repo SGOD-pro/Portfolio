@@ -33,6 +33,10 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Souvik Karmakar", url: "https://github.com/SGOD-pro" }],
   creator: "Souvik Karmakar",
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: "Souvik Karmakar | Fullstack Developer & Applied AI Engineer",
     description:
@@ -48,6 +52,15 @@ export const metadata: Metadata = {
   },
 };
 
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Souvik Karmakar",
+  alternateName: "SGOD-pro",
+  jobTitle: "Fullstack Developer & Applied AI Engineer",
+  sameAs: ["https://github.com/SGOD-pro"],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -61,6 +74,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${plexMono.variable} h-full antialiased dark`}
     >
       <body className="flex flex-col min-h-dvh w-full font-sans" suppressHydrationWarning>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        />
         {children}
       </body>
     </html>

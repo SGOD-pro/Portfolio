@@ -358,7 +358,8 @@ const DotGrid = ({
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const ratio = Math.min(settingsRef.current.dpr ?? window.devicePixelRatio ?? 1, 2);
+      const maxDpr = window.innerWidth < 1024 ? 1 : 2;
+      const ratio = Math.min(settingsRef.current.dpr ?? window.devicePixelRatio ?? 1, maxDpr);
       const width = Math.max(1, Math.round(rect.width));
       const height = Math.max(1, Math.round(rect.height));
       Object.assign(view, { width, height, left: rect.left, top: rect.top, ratio });
@@ -617,7 +618,7 @@ const DotGrid = ({
     };
 
     const onMove = (event: PointerEvent) => {
-      if (!settingsRef.current.mouseInteraction) return;
+      if (!settingsRef.current.mouseInteraction || event.pointerType === 'touch') return;
       const [x, y] = locate(event);
       const inside = x >= 0 && y >= 0 && x <= view.width && y <= view.height;
       const time = event.timeStamp || performance.now();

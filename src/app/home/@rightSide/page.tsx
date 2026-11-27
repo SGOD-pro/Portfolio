@@ -40,12 +40,8 @@ interface RepoDetailsResponse {
 
 function ProjectMetadataSidebar({ project }: { project: string }) {
   const cacheKey = `repo:${project}`;
-  const [data, setData] = useState<RepoDetailsResponse | null>(() => {
-    return getLocalCache<RepoDetailsResponse>(cacheKey);
-  });
-  const [loading, setLoading] = useState(() => {
-    return !getLocalCache<RepoDetailsResponse>(cacheKey);
-  });
+  const [data, setData] = useState<RepoDetailsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const activeDoc = searchParams.get("doc") || "readme";
@@ -60,6 +56,15 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
 
   useEffect(() => {
     let active = true;
+
+    // Hydrate from localStorage after mount so SSR and initial client hydration always match
+    queueMicrotask(() => {
+      if (!active) return;
+      const cached = getLocalCache<RepoDetailsResponse>(cacheKey);
+      setData(cached);
+      setLoading(!cached);
+      setError(null);
+    });
 
     const ownerParam = repoOwner ? `?owner=${encodeURIComponent(repoOwner)}` : "";
     fetch(`/api/github/repo/${encodeURIComponent(project)}${ownerParam}`)
@@ -91,7 +96,7 @@ function ProjectMetadataSidebar({ project }: { project: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-3 font-mono text-[11px] p-2 animate-pulse">
+      <div className="flex flex-col gap-3 font-mono text-[11px] p-2">
         <div className="h-3 w-28 bg-surface-secondary rounded" />
         <div className="h-5 w-40 bg-surface-secondary rounded" />
         <div className="h-12 w-full bg-surface-secondary/60 rounded" />
@@ -313,13 +318,13 @@ function DefaultSidebar() {
           extrudeDepth={1.2}
           color="#D63825"
           emissiveColor="#3F1A13"
-          size={3}
+          size={3.5}
           rotationSpeed={0.5}
-          metalness={0.5}
+          metalness={0.8}
           roughness={0.8}
           bevelEnabled={true}
           bevelThickness={0.1}
-          bevelSize={0.05}
+          bevelSize={0.1}
           autoRotate={true}
           pauseOnHover={true}
           background="transparent"
@@ -327,7 +332,7 @@ function DefaultSidebar() {
           width="100%"
         />
         {/* Hover text under the 3D block */}
-        <div className="absolute bottom-1 left-0 right-0 text-center pointer-events-none transition-all">
+        <div className="absolute bottom-1 left-0 right-0 text-center pointer-events-none">
           <p className="text-[11px] tracking-wider font-mono text-muted/90 opacity-0 group-hover/code:opacity-100 transition-opacity duration-200">
             CODE WITH <span className="text-accent font-bold">CAFFEINE</span>
           </p>
@@ -342,10 +347,10 @@ function DefaultSidebar() {
           href="https://github.com/SGOD-pro"
           target="_blank"
           rel="noopener noreferrer"
-          className="relative group/avatar focus-visible:outline-2 focus-visible:outline-focus rounded-full transition-transform hover:scale-105 shrink-0"
+          className="relative group/avatar focus-visible:outline-2 focus-visible:outline-focus rounded-full shrink-0"
           title="View SGOD-pro on GitHub"
         >
-          <div className="relative w-24 h-24 sm:w-26 sm:h-26 rounded-full p-1 border-2 border-border/70 bg-surface-secondary/40 group-hover/avatar:border-command transition-all duration-300 shadow-[0_0_24px_rgba(156,175,136,0.3)]">
+          <div className="relative w-24 h-24 sm:w-26 sm:h-26 rounded-full p-1 border border-border/80 bg-surface-secondary/40 group-hover/avatar:border-command transition-colors duration-200">
             <Image
               unoptimized
               src="https://github.com/SGOD-pro.png?size=300"

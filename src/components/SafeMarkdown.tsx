@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { resolveMarkdownUrl } from "@/lib/markdown/resolveUrl";
 import MermaidBlock from "@/components/MermaidBlock";
 
@@ -47,7 +47,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="text-muted hover:text-foreground text-[10px] uppercase font-mono px-2 py-0.5 rounded border border-white/[0.08] hover:border-command/40 bg-surface-secondary/40 hover:bg-surface-secondary/80 transition-all cursor-pointer"
+          className="text-muted hover:text-foreground text-[10px] uppercase font-mono px-2 py-0.5 rounded border border-white/[0.08] hover:border-command/40 bg-surface-secondary/40 hover:bg-surface-secondary/80 transition-colors cursor-pointer"
         >
           {copied ? "COPIED ✓" : "COPY"}
         </button>
@@ -197,42 +197,43 @@ export default function SafeMarkdown({
   className = "",
   htmlUrl,
 }: SafeMarkdownProps) {
-  if (!content) {
-    return <p className="text-muted text-xs italic">No content available.</p>;
-  }
+  const renderedContent = useMemo(() => {
+    if (!content) {
+      return <p className="text-muted text-xs italic">No content available.</p>;
+    }
 
-  // Byte size guard for oversized files
-  const byteLength = new TextEncoder().encode(content).length;
-  if (byteLength > MAX_DOCUMENT_BYTES) {
-    return (
-      <div className="p-4 rounded-lg border border-warning/30 bg-warning/10 text-warning text-xs font-mono">
-        <p className="font-semibold">Document exceeds display limit (256 KB).</p>
-        <p className="mt-1 text-foreground/80">
-          This document is {Math.round(byteLength / 1024)} KB. To preserve client performance, please
-          view the raw file directly on GitHub.
-        </p>
-        {htmlUrl && (
-          <a
-            href={htmlUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-3 px-3 py-1 rounded border border-warning/50 text-warning hover:bg-warning/20 transition"
-          >
-            Open on GitHub ↗
-          </a>
-        )}
-      </div>
-    );
-  }
+    // Byte size guard for oversized files
+    const byteLength = new TextEncoder().encode(content).length;
+    if (byteLength > MAX_DOCUMENT_BYTES) {
+      return (
+        <div className="p-4 rounded-lg border border-warning/30 bg-warning/10 text-warning text-xs font-mono">
+          <p className="font-semibold">Document exceeds display limit (256 KB).</p>
+          <p className="mt-1 text-foreground/80">
+            This document is {Math.round(byteLength / 1024)} KB. To preserve client performance, please
+            view the raw file directly on GitHub.
+          </p>
+          {htmlUrl && (
+            <a
+              href={htmlUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-3 px-3 py-1 rounded border border-warning/50 text-warning hover:bg-warning/20 transition"
+            >
+              Open on GitHub ↗
+            </a>
+          )}
+        </div>
+      );
+    }
 
-  const parts = repo.split("/");
-  const owner = parts.length > 1 ? parts[0] : "SGOD-pro";
-  const repoName = parts.length > 1 ? parts[1] : parts[0];
+    const parts = repo.split("/");
+    const owner = parts.length > 1 ? parts[0] : "SGOD-pro";
+    const repoName = parts.length > 1 ? parts[1] : parts[0];
 
-  const lines = content.replace(/\r\n/g, "\n").split("\n");
-  const nodes: React.ReactNode[] = [];
-  let i = 0;
-  let blockKey = 0;
+    const lines = content.replace(/\r\n/g, "\n").split("\n");
+    const nodes: React.ReactNode[] = [];
+    let i = 0;
+    let blockKey = 0;
 
   while (i < lines.length) {
     const line = lines[i];
@@ -459,9 +460,12 @@ export default function SafeMarkdown({
     );
   }
 
-  return (
-    <article className={`space-y-1 text-[11px] font-mono leading-relaxed ${className}`}>
-      {nodes}
-    </article>
-  );
+    return (
+      <article className={`space-y-1 text-[11px] font-mono leading-relaxed ${className}`}>
+        {nodes}
+      </article>
+    );
+  }, [content, repo, branch, docPath, className, htmlUrl]);
+
+  return renderedContent;
 }

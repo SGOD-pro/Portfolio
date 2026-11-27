@@ -3,9 +3,14 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { Home, Code, Folder, Calendar, Mail } from "lucide-react";
 import useViewTransition from "@/hooks/useViewTransition";
 import GlassSurface from "@/components/GlassSurface";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(useGSAP);
+}
 
 // ============================================================================
 // MOBILE DOCK & JELLY DYNAMICS CONFIGURATION
@@ -33,9 +38,9 @@ export const DOCK_CONFIG = {
   /** Bevel border width in pixels */
   GLASS_BEVEL_WIDTH: 8,
   /** Chromatic dispersion intensity */
-  GLASS_DISPERSION: 0.14,
+  GLASS_DISPERSION: 0.10,
   /** Specular reflection brightness */
-  GLASS_REFLECTION: 0.70,
+  GLASS_REFLECTION: 0.60,
   /** Highlight glossiness */
   GLASS_SHINE: 0.40,
   /** Glass tint color */
@@ -90,8 +95,8 @@ export const DOCK_CONFIG = {
   PILL_EXTRA_WIDTH: 4,
   /** Inner dock padding in pixels */
   DOCK_PADDING: 6,
-  /** Device pixel ratio cap for smooth 120fps WebGL rendering */
-  DPR_LIMIT: 1.5,
+  /** Device pixel ratio cap for smooth 120fps WebGL rendering on mobile */
+  DPR_LIMIT: 1,
   /** Backdrop texture padding around dock in pixels */
   SCENE_PADDING: 32,
 };
@@ -156,6 +161,8 @@ function MobileDock() {
   const routeIndex = selectedIndex(pathname);
 
   const active = useRef(routeIndex);
+  const targetIndexRef = useRef(routeIndex);
+  const redrawFrameRef = useRef(0);
 
   const dock = useRef<HTMLDivElement>(null);
   const visual = useRef<HTMLDivElement>(null);
@@ -210,9 +217,22 @@ function MobileDock() {
     return visual.current ? (Array.from(visual.current.children) as HTMLElement[]) : [];
   }, []);
 
-  // Lightweight WebGL redraw: triggers draw() without re-uploading texture data to the GPU!
+  // Frame-coalesced WebGL redraw: guarantees at most 1 draw() per vsync frame without re-uploading texture
   const redraw = useCallback(() => {
-    glass.current?.dispatchEvent(new Event("glass-redraw"));
+    if (redrawFrameRef.current) return;
+    redrawFrameRef.current = requestAnimationFrame(() => {
+      redrawFrameRef.current = 0;
+      glass.current?.dispatchEvent(new Event("glass-redraw"));
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (redrawFrameRef.current) {
+        cancelAnimationFrame(redrawFrameRef.current);
+        redrawFrameRef.current = 0;
+      }
+    };
   }, []);
 
   // Full WebGL texture refresh: only needed when the rasterized canvas actually changes
@@ -220,111 +240,124 @@ function MobileDock() {
     glass.current?.dispatchEvent(new Event("glass-refresh"));
   }, []);
 
-  useEffect(() => {
-    const nav = dock.current;
-    const layer = visual.current;
-    const pill = moving.current;
-    if (!nav || !layer || !pill) return;
+  const { contextSafe } = useGSAP(
+    () => {
+      const nav = dock.current;
+      const layer = visual.current;
+      const pill = moving.current;
+      if (!nav || !layer || !pill) return;
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) return;
 
-    let alive = true;
-    let generation = 0;
-    let frame = 0;
-    const images = new Map<string, Promise<HTMLImageElement>>();
+      let alive = true;
+      let generation = 0;
+      let frame = 0;
+      const images = new Map<string, Promise<HTMLImageElement>>();
 
-    const place = (targetIndex: number, animate: boolean) => {
-      const cells = Array.from(layer.children) as HTMLElement[];
-      const cell = cells[targetIndex];
-      if (!cell) return;
+      const place = (targetIndex: number, animate: boolean) => {
+        const cells = Array.from(layer.children) as HTMLElement[];
+        const cell = cells[targetIndex];
+        if (!cell) return;
 
-      const cellWidth = cell.offsetWidth;
-      const baseWidth =
-        DOCK_CONFIG.PILL_WIDTH > 0
-          ? DOCK_CONFIG.PILL_WIDTH
-          : cellWidth + DOCK_CONFIG.PILL_EXTRA_WIDTH;
+        // Prevent duplicate routeIndex effect from killing & restarting an already-running tween to the same tab
+        if (animate && targetIndexRef.current === targetIndex && gsap.isTweening(pill)) {
+          return;
+        }
+        targetIndexRef.current = targetIndex;
 
-      // Read the target X BEFORE mutating pill.style.width to avoid an extra layout reflow
-      const targetX = layer.offsetLeft + cell.offsetLeft + (cellWidth - baseWidth) / 2;
+        const cellWidth = cell.offsetWidth;
+        const baseWidth =
+          DOCK_CONFIG.PILL_WIDTH > 0
+            ? DOCK_CONFIG.PILL_WIDTH
+            : cellWidth + DOCK_CONFIG.PILL_EXTRA_WIDTH;
 
-      if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        // Read the target X BEFORE mutating pill.style.width to avoid an extra layout reflow
+        const targetX = layer.offsetLeft + cell.offsetLeft + (cellWidth - baseWidth) / 2;
+
+        if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          gsap.killTweensOf(pill);
+          pill.style.width = baseWidth + "px";
+          gsap.set(pill, { x: targetX, scale: 1, scaleX: 1, scaleY: 1 });
+          redraw();
+          return;
+        }
+
+        // Read the pill's current animated x BEFORE any DOM mutation so we get the live tweened value
+        const rawCurrentX = gsap.getProperty(pill, "x");
+        const currentX = typeof rawCurrentX === "number" && !Number.isNaN(rawCurrentX) ? rawCurrentX : targetX;
+        const distance = Math.abs(targetX - currentX);
+
         gsap.killTweensOf(pill);
+
+        // Commit the new width NOW (after all layout reads are done)
         pill.style.width = baseWidth + "px";
-        gsap.set(pill, { x: targetX, scale: 1, scaleX: 1, scaleY: 1 });
-        redraw();
-        return;
-      }
 
-      // Read the pill's current animated x BEFORE any DOM mutation so we get the live tweened value
-      const rawCurrentX = gsap.getProperty(pill, "x");
-      const currentX = typeof rawCurrentX === "number" && !Number.isNaN(rawCurrentX) ? rawCurrentX : targetX;
-      const distance = Math.abs(targetX - currentX);
+        if (distance < 1) {
+          // Already on target X; ensure scale is settled cleanly
+          const sx = gsap.getProperty(pill, "scaleX");
+          const sy = gsap.getProperty(pill, "scaleY");
+          if (sx === 1 && sy === 1) {
+            gsap.set(pill, { x: targetX, scale: 1, scaleX: 1, scaleY: 1 });
+            redraw();
+            return;
+          }
+          gsap.to(pill, {
+            x: targetX,
+            scale: 1.0,
+            scaleX: 1.0,
+            scaleY: 1.0,
+            duration: DOCK_CONFIG.RELEASE_DURATION,
+            ease: DOCK_CONFIG.RELEASE_EASE,
+            onUpdate: redraw,
+          });
+          return;
+        }
 
-      gsap.killTweensOf(pill);
+        // --- Short distance (adjacent tabs): skip stretch/squash, use a single smooth tween ---
+        if (distance < 80) {
+          gsap.to(pill, {
+            x: targetX,
+            scaleX: 1.0,
+            scaleY: 1.0,
+            duration: DOCK_CONFIG.TAP_TRANSIT_DURATION,
+            ease: "power3.out",
+            onUpdate: redraw,
+            onComplete: redraw,
+          });
+          return;
+        }
 
-      // Commit the new width NOW (after all layout reads are done)
-      pill.style.width = baseWidth + "px";
+        // Dual-axis jelly deformation: horizontal stretch AND vertical squash
+        const stretchFactor = Math.min(1.22, 1 + distance * 0.0008);
+        const squashFactor = Math.max(0.88, 1 - distance * 0.0005);
 
-      if (distance < 1) {
-        // Still settle any lift scale cleanly with jelly bounce
-        gsap.to(pill, {
+        const tl = gsap.timeline({
+          onComplete: redraw,
+        });
+
+        // Phase 1: Rapid elastic transit with jelly stretch & squash
+        tl.to(pill, {
           x: targetX,
+          scaleX: stretchFactor,
+          scaleY: squashFactor,
+          duration: DOCK_CONFIG.TAP_TRANSIT_DURATION,
+          ease: "power2.inOut",
+          onUpdate: redraw,
+        });
+
+        // Phase 2: Organic liquid wobble settle in BOTH width AND height
+        tl.to(pill, {
           scale: 1.0,
           scaleX: 1.0,
           scaleY: 1.0,
           duration: DOCK_CONFIG.RELEASE_DURATION,
-          ease: DOCK_CONFIG.RELEASE_EASE,
+          ease: DOCK_CONFIG.TAP_WOBBLE_EASE,
           onUpdate: redraw,
         });
-        return;
-      }
-
-      // --- Short distance (adjacent tabs): skip stretch/squash, use a single smooth tween ---
-      // This is the main fix for the Me↔Skills jitter: fewer GSAP phases = fewer compositor conflicts
-      if (distance < 80) {
-        gsap.to(pill, {
-          x: targetX,
-          scaleX: 1.0,
-          scaleY: 1.0,
-          duration: DOCK_CONFIG.TAP_TRANSIT_DURATION,
-          ease: "power3.out",
-          onUpdate: redraw,
-          onComplete: redraw,
-        });
-        return;
-      }
-
-      // Dual-axis jelly deformation: horizontal stretch AND vertical squash
-      const stretchFactor = Math.min(1.22, 1 + distance * 0.0008);
-      const squashFactor = Math.max(0.88, 1 - distance * 0.0005);
-
-      const tl = gsap.timeline({
-        onComplete: redraw,
-      });
-
-      // Phase 1: Rapid elastic transit with jelly stretch & squash
-      tl.to(pill, {
-        x: targetX,
-        scaleX: stretchFactor,
-        scaleY: squashFactor,
-        duration: DOCK_CONFIG.TAP_TRANSIT_DURATION,
-        ease: "power2.inOut",
-        onUpdate: redraw,
-      });
-
-      // Phase 2: Organic liquid wobble settle in BOTH width AND height
-      tl.to(pill, {
-        scale: 1.0,
-        scaleX: 1.0,
-        scaleY: 1.0,
-        duration: DOCK_CONFIG.RELEASE_DURATION,
-        ease: DOCK_CONFIG.TAP_WOBBLE_EASE,
-        onUpdate: redraw,
-      });
-    };
-    move.current = place;
+      };
+      move.current = place;
 
     const rasterIcon = (svg: SVGSVGElement, color: string) => {
       const clone = svg.cloneNode(true) as SVGSVGElement;
@@ -504,9 +537,11 @@ function MobileDock() {
       move.current = () => {};
       images.clear();
     };
-  }, [redraw, refresh]);
+    },
+    { scope: dock, dependencies: [redraw, refresh] }
+  );
 
-  // Synchronize route changes smoothly without heavy texture re-capture
+  // Synchronize route changes smoothly without restarting an already-running tween to the same tab
   useEffect(() => {
     active.current = routeIndex;
     if (!isDraggingRef.current) {
@@ -514,8 +549,8 @@ function MobileDock() {
     }
   }, [routeIndex]);
 
-  // Tactile Drag Physics Handlers
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  // Tactile Drag Physics Handlers (wrapped with contextSafe for automatic GSAP cleanup)
+  const handlePointerDown = contextSafe((e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
     const pill = moving.current;
     if (!pill) return;
@@ -539,23 +574,10 @@ function MobileDock() {
     hasDraggedRef.current = false;
     isDraggingRef.current = true;
     hoverIndexRef.current = null;
+    // Defer pointer capture & lift scale until DRAG_THRESHOLD_PX is crossed so taps never lag or stutter
+  });
 
-    // Note: we deliberately defer setPointerCapture until dx exceeds DRAG_THRESHOLD_PX
-    // so simple clicks/taps pass straight to child <a> elements cleanly!
-
-    gsap.killTweensOf(pill);
-
-    // Smooth lift on pickup (power2.out avoids overshoot shaking when finger holds/moves)
-    gsap.to(pill, {
-      scaleX: DOCK_CONFIG.DRAG_SCALE_X,
-      scaleY: DOCK_CONFIG.DRAG_SCALE_Y,
-      duration: DOCK_CONFIG.DRAG_LIFT_DURATION,
-      ease: "power2.out",
-      onUpdate: redraw,
-    });
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = contextSafe((e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current || !moving.current || !dock.current) return;
     const pill = moving.current;
     const layer = visual.current;
@@ -565,8 +587,7 @@ function MobileDock() {
     if (!hasDraggedRef.current) {
       if (Math.abs(initialDx) <= DOCK_CONFIG.DRAG_THRESHOLD_PX) return;
       hasDraggedRef.current = true;
-      // Anchor drag origin at the point drag begins so there is zero 5px jump,
-      // and capture current GSAP scale & stop the lift tween so nothing fights!
+      // Anchor drag origin at the point drag begins so there is zero jump
       dragStartRef.current.dragOriginX = e.clientX;
       dragStartRef.current.lastX = e.clientX;
       dragStartRef.current.lastTime = Date.now();
@@ -574,8 +595,8 @@ function MobileDock() {
 
       const curSX = gsap.getProperty(pill, "scaleX");
       const curSY = gsap.getProperty(pill, "scaleY");
-      dragStartRef.current.scaleX = typeof curSX === "number" && !Number.isNaN(curSX) ? curSX : DOCK_CONFIG.DRAG_SCALE_X;
-      dragStartRef.current.scaleY = typeof curSY === "number" && !Number.isNaN(curSY) ? curSY : DOCK_CONFIG.DRAG_SCALE_Y;
+      dragStartRef.current.scaleX = typeof curSX === "number" && !Number.isNaN(curSX) ? curSX : 1;
+      dragStartRef.current.scaleY = typeof curSY === "number" && !Number.isNaN(curSY) ? curSY : 1;
 
       gsap.killTweensOf(pill);
 
@@ -666,9 +687,9 @@ function MobileDock() {
     if (closestIndex !== hoverIndex) {
       setHoverIndex(closestIndex);
     }
-  };
+  });
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerUp = contextSafe((e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current || !moving.current) return;
     const pill = moving.current;
     const layer = visual.current;
@@ -692,16 +713,7 @@ function MobileDock() {
     setHoverIndex(null);
 
     if (!wasDrag) {
-      // Simple tap/click: let handleTabClick drive position & route;
-      // gently settle lift scale here only as a fallback if tapped on empty padding
-      gsap.to(pill, {
-        scale: 1.0,
-        scaleX: 1.0,
-        scaleY: 1.0,
-        duration: DOCK_CONFIG.RELEASE_DURATION,
-        ease: DOCK_CONFIG.RELEASE_EASE,
-        onUpdate: redraw,
-      });
+      // Simple tap/click: let handleTabClick drive position & route with zero competing tweens
       return;
     }
 
@@ -719,6 +731,7 @@ function MobileDock() {
     const targetX = layer.offsetLeft + targetCell.offsetLeft + (cellWidth - baseWidth) / 2;
 
     active.current = targetIdx;
+    targetIndexRef.current = targetIdx;
     setOptimisticIndex(targetIdx); // Synchronize active tab with settled pill position immediately
 
     // Elastic Wobble Release: drops back to normal 1.0x with bouncy jelly settle on both width & height
@@ -740,9 +753,9 @@ function MobileDock() {
         navigate(targetItem.href);
       }
     }
-  };
+  });
 
-  const handleTabClick = (e: React.MouseEvent, index: number, href: string) => {
+  const handleTabClick = contextSafe((e: React.MouseEvent, index: number, href: string) => {
     e.preventDefault();
     if (hasDraggedRef.current) return;
 
@@ -752,7 +765,7 @@ function MobileDock() {
     setOptimisticIndex(index); // Synchronize active tab and pill position in lockstep
     move.current(index, true);
     navigate(href);
-  };
+  });
 
   return (
     <nav aria-label="Mobile navigation" className="mln-root">

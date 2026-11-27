@@ -4,7 +4,7 @@ export default function RootLoading() {
       {/* Centered Terminal Panel Skeleton: max-w-[460px], 28px internal padding (p-7) */}
       <section
         aria-label="Loading Workspace Entry"
-        className="relative z-10 w-full max-w-[460px] rounded-2xl border border-border bg-surface/85 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] p-7 flex flex-col animate-pulse"
+        className="relative z-10 w-full max-w-[460px] rounded-2xl border border-border bg-surface/85 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] p-7 flex flex-col"
       >
         {/* Header: Terminal controls + SGOD.PRO / WORKSPACE */}
         <header className="flex items-center justify-between pb-4 border-b border-border text-[11px] font-mono text-muted tracking-wider uppercase">

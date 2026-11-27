@@ -38,28 +38,24 @@ function ProjectReaderView({
     ? selectedRepo.fullName.split("/")[0]
     : undefined;
 
-  const [prevCacheKey, setPrevCacheKey] = useState(cacheKey);
-  const [docData, setDocData] = useState<DocResponse | null>(() => {
-    return getLocalCache<DocResponse>(cacheKey);
-  });
-  const [loading, setLoading] = useState(() => {
-    return !getLocalCache<DocResponse>(cacheKey);
-  });
+  const [docData, setDocData] = useState<DocResponse | null>(null);
+  const [loading, setLoading] = useState(true);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  if (prevCacheKey !== cacheKey) {
-    setPrevCacheKey(cacheKey);
-    const cached = getLocalCache<DocResponse>(cacheKey);
-    setDocData(cached);
-    setLoading(!cached);
-    setErrorStatus(null);
-    setErrorMessage(null);
-  }
-
   useEffect(() => {
     let active = true;
+
+    // Hydrate from localStorage after mount so SSR and initial client hydration always match
+    queueMicrotask(() => {
+      if (!active) return;
+      const cached = getLocalCache<DocResponse>(cacheKey);
+      setDocData(cached);
+      setLoading(!cached);
+      setErrorStatus(null);
+      setErrorMessage(null);
+    });
 
     const ownerParam = repoOwner ? `&owner=${encodeURIComponent(repoOwner)}` : "";
     fetch(`/api/github/repo/${encodeURIComponent(project)}/doc?path=${encodeURIComponent(docPath)}${ownerParam}`)

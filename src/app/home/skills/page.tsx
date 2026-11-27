@@ -9,6 +9,9 @@ import TerminalPrompt from "@/components/TerminalPrompt";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import { useGitHubStore } from "@/lib/store";
 import { getActiveScroller } from "@/utils/scrollContainer";
+import { CERTIFICATES, RESUME_URL, type Certificate } from "@/lib/certificates";
+
+export type { Certificate };
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -31,148 +34,50 @@ const skillCategories: SkillCategory[] = [
     title: "Frontend Development",
     description: "Building responsive, accessible web interfaces with modern rendering, type safety, and motion.",
     skills: [
-      { name: "Next.js", level: 94, color: "#E2E8F0" },
-      { name: "React", level: 95, color: "#00D8FE" },
-      { name: "TypeScript", level: 92, color: "#3178C6" },
-      { name: "Tailwind CSS", level: 96, color: "#38BDF8" },
-      { name: "GSAP", level: 88, color: "#0AE448" },
-      { name: "HTML5 / WebGL", level: 90, color: "#E44D26" },
-      { name: "State Machines", level: 84, color: "#A855F7" },
+      { name: "Next.js", level: 90, color: "#E2E8F0" },
+      { name: "React", level: 90, color: "#00D8FE" },
+      { name: "TypeScript", level: 95, color: "#3178C6" },
+      { name: "Tailwind CSS", level: 80, color: "#38BDF8" },
+      { name: "GSAP", level: 67, color: "#0AE448" },
+      { name: "HTML5 / WebGL", level: 70, color: "#E44D26" }
     ],
   },
   {
     title: "Backend & Systems",
     description: "Designing resilient REST & GraphQL APIs, data models, and performant backend services.",
     skills: [
-      { name: "Node.js", level: 94, color: "#5FA04E" },
-      { name: "Python", level: 90, color: "#3776AB" },
-      { name: "Go", level: 82, color: "#00ADD8" },
-      { name: "PostgreSQL", level: 90, color: "#336791" },
-      { name: "Redis", level: 86, color: "#DC382D" },
-      { name: "MongoDB", level: 88, color: "#47A248" },
-      { name: "Prisma / ORMs", level: 92, color: "#5A67D8" },
+      { name: "Node.js", level: 72, color: "#5FA04E" },
+      { name: "Python", level: 73, color: "#3776AB" },
+      // { name: "Go", level: 82, color: "#00ADD8" },
+      { name: "PostgreSQL", level: 60, color: "#336791" },
+      { name: "Redis", level: 62, color: "#DC382D" },
+      { name: "MongoDB", level: 74, color: "#47A248" },
+      // { name: "Prisma / ORMs", level: 92, color: "#5A67D8" },
     ],
   },
   {
     title: "AI & Machine Learning",
     description: "Implementing retrieval pipelines, LLM-driven workflows, and embedding vector stores.",
     skills: [
-      { name: "OpenAI API", level: 94, color: "#10A37F" },
-      { name: "PyTorch", level: 85, color: "#EE4C2C" },
-      { name: "LangChain", level: 90, color: "#2DBA4E" },
-      { name: "Vector Databases", level: 88, color: "#8B5CF6" },
-      { name: "RAG Pipelines", level: 92, color: "#F59E0B" },
-      { name: "Scikit-learn", level: 84, color: "#F97316" },
+      { name: "OpenAI API", level: 78, color: "#10A37F" },
+      { name: "PyTorch", level: 20, color: "#EE4C2C" },
+      { name: "LangChain", level: 60, color: "#2DBA4E" },
+      { name: "Vector Databases", level: 70, color: "#8B5CF6" },
+      { name: "RAG Pipelines", level: 77, color: "#F59E0B" },
+      { name: "Scikit-learn", level: 55, color: "#F97316" },
     ],
   },
   {
     title: "DevOps & Tooling",
     description: "Containerization, automated continuous integration, and secure cloud environments.",
     skills: [
-      { name: "Docker", level: 90, color: "#2496ED" },
-      { name: "Kubernetes", level: 82, color: "#326CE5" },
-      { name: "AWS", level: 85, color: "#FF9900" },
-      { name: "GitHub Actions", level: 92, color: "#2088FF" },
-      { name: "Linux / Shell", level: 94, color: "#4ADE80" },
-      { name: "CI/CD Workflows", level: 88, color: "#14B8A6" },
+      { name: "Docker", level: 70, color: "#2496ED" },
+      { name: "Kubernetes", level: 20, color: "#326CE5" },
+      { name: "AWS", level: 40, color: "#FF9900" },
+      { name: "GitHub Actions", level: 66, color: "#2088FF" },
+      { name: "Linux / Shell", level: 60, color: "#4ADE80" },
+      { name: "CI/CD Workflows", level: 58, color: "#14B8A6" },
     ],
-  },
-];
-
-export interface Certificate {
-  id: string;
-  title: string;
-  issuer: string;
-  category: "Hackathon" | "Course Completion" | "Professional Certification";
-  recipient: string;
-  date: string;
-  fileName: string;
-  fileSize: string;
-  credentialId?: string;
-  description: string;
-  skills: string[];
-  pdfUrl?: string;
-}
-
-const RESUME_URL =
-  "https://drive.google.com/file/d/165G0scNbWuux1aZ_VwSSXlds1Hw2-AL6/view?usp=drive_link";
-
-const CERTIFICATES: Certificate[] = [
-  {
-    id: "team-bro-code",
-    title: "Team Bro Code — National Hackathon Finalist",
-    issuer: "National Hackathon Summit",
-    category: "Hackathon",
-    recipient: "Souvik Karmakar",
-    date: "Aug 2024",
-    fileName: "09-TEAM-BRO-CODE.pdf",
-    fileSize: "3.1 MB",
-    pdfUrl:
-      "https://drive.google.com/file/d/1_mdVutDZt_Gb-jvnJCBgWcB-rgyquO9K/view?usp=drive_link",
-    description:
-      "Engineered collaborative multi-tenant fullstack architecture under 24-hour hackathon constraints with real-time sync.",
-    skills: ["Real-time Systems", "System Architecture", "Hackathon Finalist"],
-  },
-  {
-    id: "hta-gdg",
-    title: "Hack the App (HTA) — GDG Hackathon",
-    issuer: "Google Developer Groups (GDG)",
-    category: "Hackathon",
-    recipient: "Souvik Karmakar",
-    date: "Aug 2024",
-    fileName: "hta-gdg-certificate-souvik_karmakar (1).pdf",
-    fileSize: "16 KB",
-    pdfUrl:
-      "https://drive.google.com/file/d/1mWHtS5A7mGEs-t9Anwf8GHbWSv4XLnkA/view?usp=drive_link",
-    description:
-      "Awarded by Google Developer Groups (GDG) for engineering competition excellence and rapid prototype development in Hack the App.",
-    skills: ["Fullstack Architecture", "API Integration", "Fast Prototyping", "GDG Hackathon"],
-  },
-  {
-    id: "konverge",
-    title: "Konverge Tech Hackathon & Innovation",
-    issuer: "Konverge Technical Fest",
-    category: "Hackathon",
-    recipient: "Souvik Karmakar",
-    date: "Aug 2024",
-    fileName: "Konverge_Certificate_668602 (1).pdf",
-    fileSize: "301 KB",
-    credentialId: "668602",
-    pdfUrl:
-      "https://drive.google.com/file/d/1weaQ7TXa5qtVFpC2GiWVGuru-vEmS6lT/view?usp=drive_link",
-    description:
-      "Competitive hackathon award for scalable software system architecture, component modularity, and applied developer tooling.",
-    skills: ["Component Systems", "Modular Architecture", "Technical Delivery"],
-  },
-  {
-    id: "launched-course",
-    title: "LaunchED Fullstack & Systems Course Completion",
-    issuer: "LaunchED Technical Academy",
-    category: "Course Completion",
-    recipient: "Souvik Karmakar",
-    date: "2024",
-    fileName: "LanchED course completion.pdf",
-    fileSize: "251 KB",
-    pdfUrl:
-      "https://drive.google.com/file/d/1k6gIVKhC5p7LCj84Rt5RZERuAn2vAx5y/view?usp=drive_link",
-    description:
-      "Rigorous technical course completion curriculum covering advanced TypeScript, distributed systems concepts, and production cloud pipelines.",
-    skills: ["Fullstack Web Development", "Advanced TypeScript", "Cloud Deployment"],
-  },
-  {
-    id: "launchpaded",
-    title: "LaunchpadED Developer Engineering Certification",
-    issuer: "LaunchpadED Accreditation",
-    category: "Professional Certification",
-    recipient: "Souvik Karmakar",
-    date: "2024",
-    fileName: "LanchpadED.pdf",
-    fileSize: "750 KB",
-    pdfUrl:
-      "https://drive.google.com/file/d/1pRZvD_DIrCO43jc0wBblyVWA40bH_1Qz/view?usp=drive_link",
-    description:
-      "Professional accreditation verifying engineering proficiency in frontend performance, type-safe APIs, and responsive design systems.",
-    skills: ["Frontend Engineering", "Type Safety", "Performance Optimization"],
   },
 ];
 
@@ -399,7 +304,7 @@ export default function SkillsPage() {
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-surface-secondary/70 overflow-hidden border border-white/5">
                     <div
-                      className="h-full rounded-full transition-all duration-1000 ease-out"
+                      className="h-full rounded-full transition-transform duration-700 ease-out"
                       style={{
                         width: `${skill.level}%`,
                         backgroundColor: skill.color,
